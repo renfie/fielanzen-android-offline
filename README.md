@@ -76,6 +76,6 @@ Own project components are licensed under [GPL-2.0-only](LICENSE). See [NOTICE.m
 
 ## Automatic APK builds and signed GitHub releases
 
-Every push to `main` triggers an Android debug build (Actions artifact, temporary debug signing key). A matching version tag creates a **signed prerelease APK** only after the owner has configured four signing secrets. See [Signed releases — English](docs/RELEASES.en.md) or [Deutsch](docs/RELEASES.de.md). Do not mistake CI debug APKs for update-compatible release APKs.
+Every push to `main` triggers an Android debug build (Actions artifact, temporary debug signing key). To publish a signed prerelease, open **Actions → Android APK – build and signed prerelease → Run workflow**, select `main` and enable the publish checkbox. GitHub creates the matching tag after signing verification, with no Personal Access Token or Linux VM required. Pushing a matching version tag also remains supported. See [Signed releases — English](docs/RELEASES.en.md) or [Deutsch](docs/RELEASES.de.md). Do not mistake CI debug APKs for update-compatible release APKs.
 
 **In-app GPL notice:** Under **Mehr → Lizenz & Open Source**, both local and server modes show the GPLv2 rights and obligations summary, full offline license text and attribution notices.
