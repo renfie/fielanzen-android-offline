@@ -1,3 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 René Fieler (RenFie)
+#
+# This program is free software under the GNU GPL v2.
+# See LICENSE for the complete license text.
+
 #!/usr/bin/env python3
 """Strict SQLite import smoke test based on original Financisto CREATE TABLE SQL.
 

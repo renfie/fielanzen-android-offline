@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## 0.1.0-alpha.31 (2026-11-23) – Copyright and SPDX source headers
+- Original TypeScript, Java, scripts, workflows and test sources now carry GPL-2.0-only SPDX and `Copyright (C) 2026 René Fieler (RenFie)` notices with syntax appropriate to each file. Generated code and third-party dependencies remain separately attributed.
+- The full copyright holder name appears in Settings → GPLv2 and the offline license dialog in local and server modes. The GPLv2 license text remains unchanged.
+- English/German READMEs and NOTICE files updated. Package ID, data schema, backups and Financisto export unchanged.
+- A signed APK prerelease is requested automatically by the version bump.
+- Removed an obsolete assistant-specific instruction from a historical test checklist; the current repository wording is provider-neutral.
+
 The German change log contains the detailed historical alpha notes. The highlights below describe current version milestones rather than claiming all older tests pass.
 
 ## 0.1.0-alpha.30 (2026-11-23) – Android safe areas, GPLv2, automated signed releases

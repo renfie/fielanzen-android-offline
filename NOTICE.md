@@ -3,7 +3,7 @@
 # Projekt- und Lizenzhinweise
 
 FieLanzen Offline – eigenständige Android-Anwendung mit optionaler Verbindung zum getrennten Financisto-Dashboard.
-Copyright (C) 2026 RenFie. Lizenz: GNU GPL Version 2 (GPL-2.0-only), siehe LICENSE.
+Copyright (C) 2026 René Fieler (RenFie). Lizenz: GNU GPL Version 2 (GPL-2.0-only), siehe LICENSE.
 
 Eigenständige Implementierung; weder offizieller Bestandteil noch Fork der ursprünglichen Android-App Financisto.
 Die Original-App ist unter https://github.com/dsolonenko/financisto zu finden.

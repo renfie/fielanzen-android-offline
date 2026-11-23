@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 /** Dashboard 1.9.58-dev.16 Mobile API v1. No local SQLite or credentials here. */
 export type RemoteKind='expense'|'income'|'transfer';
 export type HttpMethod='GET'|'POST'|'PUT'|'DELETE';

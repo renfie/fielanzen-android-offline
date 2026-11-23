@@ -2,6 +2,13 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.31 (23.11.2026) – Copyright und Quellcode-Hinweise
+- Eigener Quellcode, native Android-Klassen, Skripte und Tests mit `SPDX-License-Identifier: GPL-2.0-only` sowie `Copyright (C) 2026 René Fieler (RenFie)` gekennzeichnet, passend zur jeweiligen Dateisyntax. Drittanbieter- und generierter Code bleibt unverändert.
+- Unter Mehr → GPLv2 · Rechte & Pflichten steht der volle Name sichtbar; ebenso im offline verfügbaren Lizenzdialog. Keine Änderung des GNU-GPLv2-Lizenzvolltexts.
+- README und NOTICE auf Deutsch und Englisch aktualisiert. App-ID, Datenbankschema, Sicherung und Financisto-Export unverändert.
+- Signierter Android-GitHub-Release wird durch die neue Versionsnummer automatisch angefordert.
+- Veraltete Anweisung im historischen Alpha-21-Testplan durch neutrale Testdokumentation ersetzt.
+
 ## 0.1.0-alpha.30 (23.11.2026) – Systemleisten, GPLv2 und automatische signierte Releases
 - Android 15/16: `MainActivity` behandelt Statusleiste, Kameraaussparung, Systemnavigation und Bildschirmtastatur mit genau einem nativen WindowInsets-Mechanismus am Content-Root. Die konkurrierende Capacitor-SystemBars-Inset-Behandlung wird deaktiviert; CSS-Safe-Area bleibt auf Web/PWA beschränkt.
 - In den Einstellungen („Mehr“) stehen GPLv2-Rechte und -Pflichten bei Weitergabe bereits sichtbar. Der vollständige GPL-Text und Copyright-/Fremdsoftwarehinweise bleiben offline im Volltext-Dialog.

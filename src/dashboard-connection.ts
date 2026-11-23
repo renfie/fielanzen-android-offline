@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 /** Only a PROVEN proxy certificate challenge may trigger Android KeyChain selection.
  * Generic HTTP 400/401, timeouts and server errors must never request a certificate.
  * Connection is retried once at most, within an explicit user-initiated action.

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 import {openStorage} from './database.js';
 import {exportUserText,exportUserBytes,runningNatively} from './file-export.js';
 import {exportBackup} from './backup.js';
@@ -28,7 +34,7 @@ import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.30';
+export const APP_VERSION='0.1.0-alpha.31';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -836,6 +842,7 @@ function dataCheckHtml():string {
 /** Licensed source and attribution are shipped in the APK, so this page works offline. */
 function licenseSettingsHtml():string {
   return `<section class="card" id="license-and-open-source"><div class="section-title"><h2>GPLv2 · Rechte & Pflichten</h2><button type="button" class="btn secondary" data-action="app-license" aria-label="Vollständigen GPLv2-Lizenztext und Rechtshinweise anzeigen">Volltext</button></div>
+  <p class="copyright-notice"><strong>Copyright © 2026 René Fieler (RenFie)</strong><span>GPL-2.0-only</span></p>
   <p class="muted small">FieLanzen Offline steht unter der <strong>GNU General Public License Version 2 (GPL-2.0-only)</strong>. Die wichtigsten Bestimmungen sind unmittelbar hier nachlesbar:</p>
   <div class="gpl-quick-summary">
     <div><strong>Deine Rechte</strong><p>Frei nutzen, Quellcode einsehen, eigene Änderungen vornehmen und das Programm weitergeben – auch kommerziell.</p></div>
@@ -848,7 +855,7 @@ function showLicenseDialog():void {
   dlg.className='license-modal';
   dlg.setAttribute('aria-label','Lizenz und Open Source');
   dlg.innerHTML=`<div class="modal-head"><h2>Lizenz & Open Source</h2><button class="btn text close-license" type="button" aria-label="Schließen">✕</button></div>
-    <div class="modal-body license-body"><p><strong>FieLanzen Offline ${esc(APP_VERSION)}</strong><br>Copyright © 2026 RenFie. Eigene Projektbestandteile: GNU GPL Version 2, ausschließlich (GPL-2.0-only).</p>
+    <div class="modal-body license-body"><p><strong>FieLanzen Offline ${esc(APP_VERSION)}</strong><br>Copyright © 2026 René Fieler (RenFie). Eigene Projektbestandteile: GNU GPL Version 2, ausschließlich (GPL-2.0-only).</p>
     <h3>Deine Rechte</h3><ul>
       <li>Das Programm für beliebige Zwecke ausführen.</li>
       <li>Den Quellcode lesen, untersuchen und verändern.</li>

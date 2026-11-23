@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -23,8 +29,8 @@ test('release workflow requires private signing secrets, verifies and publishes 
 });
 test('project version bumped while package ID remains compatible',()=>{
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'0.1.0-alpha.30');
+  assert.equal(pkg.version,'0.1.0-alpha.31');
   assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
   assert.match(read('scripts/configure-android.py'),/version_code=int\(match.group\(1\)\)-1/);
-  assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.30'/);
+  assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.31'/);
 });

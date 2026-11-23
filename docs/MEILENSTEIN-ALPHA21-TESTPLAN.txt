@@ -43,4 +43,4 @@ GRENZEN UND BESONDERHEITEN
 - Die automatische .backup-Sicherung nutzt dieselbe gewählte Exportoption. Vollständige FieLanzen-JSON-Sicherung bleibt unabhängig davon verfügbar.
 - Android-Client-Zertifikat und API-Schlüssel sind unterschiedliche Berechtigungsmechanismen. Niemals Schlüssel, private .backup-Dateien oder Logdateien mit vertraulichen Daten senden.
 
-ERGEBNIS zurück an ChatGPT: Abgehakte Punkte + Fehlermeldungen (ohne API-Schlüssel oder persönliche Buchungsdaten).
+TESTERGEBNISSE im Projekt-Testprotokoll dokumentieren: Abgehakte Prüfpunkte und Fehlermeldungen (ohne API-Schlüssel oder persönliche Buchungsdaten).

@@ -8,7 +8,9 @@
 
 <p align="center"><strong>A standalone Android personal-finance app — local first, optional dashboard connection.</strong></p>
 
-**Current source version:** `0.1.0-alpha.30` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
+**Copyright © 2026 René Fieler (RenFie)** · Licensed under [GNU GPL v2 only](LICENSE).
+
+**Current source version:** `0.1.0-alpha.31` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
 
 FieLanzen Offline is a separate Android application built with **TypeScript, Capacitor and SQLite**. Accounts, payees, categories, bookings, transfers, recurring rules and reports can be managed on the phone without a server. A separately enabled server mode connects to the [FieLanzen/Financisto Dashboard](https://github.com/renfie/financisto-dashboard) through its Mobile API. The two data sources are **not silently merged or synchronized**.
 
@@ -72,13 +74,15 @@ The focused source checks do not replace a complete Android APK build and a real
 
 Never commit real financial exports, databases, `.env` secrets, API keys, client certificates, signing keys or personally identifiable screenshots. Financisto and JSON exports are **not necessarily encrypted** even when the app-lock option is enabled. Sample URLs use `example.org`.
 
-Own project components are licensed under [GPL-2.0-only](LICENSE). See [NOTICE.md](NOTICE.md) for attribution. This is **not** an official Financisto release, fork or continuation. Source publication does not imply a Play Store-ready or fully tested APK.
+**Copyright (C) 2026 René Fieler (RenFie).** Original project components are licensed under [GPL-2.0-only](LICENSE). SPDX and copyright headers identify original source files. Preserve these notices and the GPL text when redistributing, and follow GPLv2 requirements for modified and binary distributions. See [NOTICE.md](NOTICE.md) for attribution. This is **not** an official Financisto release, fork or continuation. Source publication does not imply a Play Store-ready or fully tested APK.
 
 ## Automatic APK builds and signed GitHub releases
 
 Every push to `main` without a **new version** builds a **debug test APK**. When the Android app version in `package.json` increases on `main` (e.g. Alpha 29 → Alpha 30), GitHub Actions **automatically** builds, tests, signs and publishes the new prerelease APK + SHA256 checksum under [Releases](https://github.com/renfie/fielanzen-android-offline/releases). The matching Git tag is created by the workflow. **No personal token, Linux VM or separate approval click is needed** for version-bumped releases. A manual "Run workflow → Publish signed prerelease" option also remains available; it won't create a duplicate release for the same version. The signing keystore and credentials remain in protected GitHub Secrets and in the owner's independent offline backup.
 
 [Release guide (English)](docs/RELEASES.en.md) · [Deutsche Release-Anleitung](docs/RELEASES.de.md).
+
+**Visible author notice:** Settings → GPLv2 shows **Copyright © 2026 René Fieler (RenFie)** in both local and server modes.
 
 **License in the app:** Under **Mehr → GPLv2 · Rechte & Pflichten**, both local and dashboard-server modes show the rights and distribution obligations directly. The full GPL v2 text, warranty notice and third-party notices remain bundled offline under **Volltext**.
 

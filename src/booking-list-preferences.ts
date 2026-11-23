@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 /** Device-level display preferences shared by LOCAL and DASHBOARD-SERVER.
  * Never include these in a Financisto/JSON finance backup, and never change the ledger. */
 export type BookingPageSize=30|50|100;

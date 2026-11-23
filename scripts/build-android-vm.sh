@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 René Fieler (RenFie)
+#
+# This program is free software under the GNU GPL v2.
+# See LICENSE for the complete license text.
+
 # FieLanzen Offline: local, no-GUI Android debug APK build for Debian/Ubuntu x86_64.
 # Does not connect to GitHub or change the Docker dashboard.
 set -euo pipefail

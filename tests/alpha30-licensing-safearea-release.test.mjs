@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -28,8 +34,8 @@ test('GPL v2 rights and duties are directly visible in both settings views',()=>
  assert.match(s,/\$\{licenseSettingsHtml\(\)\}/);
 });
 test('Android alpha 30 keeps the package identity and finance export calls',()=>{
- assert.equal(JSON.parse(read('package.json')).version,'0.1.0-alpha.30');
+ assert.equal(JSON.parse(read('package.json')).version,'0.1.0-alpha.31');
  assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
- assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.30'/);
+ assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.31'/);
  assert.equal((read('src/main.ts').match(/exportFinancistoCompatible\(state\)/g)||[]).length,4);
 });

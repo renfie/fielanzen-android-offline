@@ -8,7 +8,9 @@
 
 <p align="center"><strong>Eigenständige Android-Finanzverwaltung – zuerst lokal, optional mit Dashboard-Verbindung.</strong></p>
 
-**Aktueller Quellstand:** `0.1.0-alpha.30` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
+**Copyright © 2026 René Fieler (RenFie)** · Lizenziert unter [GNU GPL v2 ausschließlich](LICENSE).
+
+**Aktueller Quellstand:** `0.1.0-alpha.31` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 
@@ -72,13 +74,15 @@ Die gezielten Quellcodeprüfungen ersetzen weder den vollständigen Android-Buil
 
 Keine echten Finanzdaten, `.backup`-Dateien, Datenbanken, API-Schlüssel, Client-Zertifikate, Signaturschlüssel, ausgefüllte `.env`-Dateien oder identifizierende Bildschirmfotos veröffentlichen. JSON- und Financisto-Sicherungen sind **nicht automatisch verschlüsselt**, auch wenn die App-Sperre aktiv ist. Beispiel-URLs verwenden `example.org`.
 
-Eigene Projektbestandteile stehen unter [GPL-2.0-only](LICENSE); Hinweise zu Dritten in [NOTICE.md](NOTICE.md). Dieses Projekt ist **keine** offizielle Financisto-Version oder -Fortsetzung. Verfügbarer Quellcode bedeutet nicht, dass eine fertige APK vollständig auf Android getestet ist.
+**Copyright (C) 2026 René Fieler (RenFie).** Eigene Projektbestandteile stehen unter [GPL-2.0-only](LICENSE); Copyright- und SPDX-Vermerke in den eigenen Quelldateien sowie der GPL-Lizenztext sind bei Weitergabe zu erhalten. Änderungen und Binärverbreitung unterliegen den entsprechenden GPLv2-Bedingungen. Hinweise zu Dritten in [NOTICE.md](NOTICE.md). Dieses Projekt ist **keine** offizielle Financisto-Version oder -Fortsetzung. Verfügbarer Quellcode bedeutet nicht, dass eine fertige APK vollständig auf Android getestet ist.
 
 ## Automatische APKs und signierte GitHub-Releases
 
 Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**. Sobald die Android-Versionsnummer in `package.json` auf `main` steigt (z. B. von Alpha 29 auf Alpha 30), erstellt GitHub Actions **automatisch** die neue signierte APK und ihre SHA256-Prüfsumme und veröffentlicht beides unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases). Das passende Git-Tag wird automatisch erzeugt. **Weder persönlicher GitHub-Token noch Linux-VM oder zusätzlicher Klick** sind beim regulären Versionswechsel erforderlich. Der manuelle Weg „Run workflow → Publish signed prerelease“ bleibt optional und verhindert doppelte Releases. Signaturschlüssel und Passwörter bleiben als GitHub-Secrets und in deiner unabhängigen Sicherung erhalten.
 
 [Release-Anleitung (Deutsch)](docs/RELEASES.de.md) · [English](docs/RELEASES.en.md).
+
+**Sichtbarer Urheberrechtshinweis:** Unter Mehr → GPLv2 steht **Copyright © 2026 René Fieler (RenFie)**, sowohl im lokalen als auch im Servermodus.
 
 **GPLv2 in der App:** Unter **Mehr → GPLv2 · Rechte & Pflichten** stehen die wichtigsten Nutzungs-/Änderungs-/Weitergaberechte und Pflichten bei Weitergabe unmittelbar im Einstellungsbereich, sowohl lokal als auch im Servermodus. Über **Volltext** sind der vollständige englische GPL-Text, der Gewährleistungsausschluss und die Hinweise zu Fremdsoftware auch offline erreichbar.
 

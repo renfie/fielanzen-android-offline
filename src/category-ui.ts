@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 import type {Category,CategoryKind} from './types.js';
 const norm=(s:string)=>s.trim().toLocaleLowerCase('de');
 export function filterManagedCategories(categories:Category[],search:string,kind:'all'|CategoryKind='all'):Category[]{

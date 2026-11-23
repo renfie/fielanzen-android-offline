@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 René Fieler (RenFie)
+#
+# This program is free software under the GNU GPL v2.
+# See LICENSE for the complete license text.
+
 set -euo pipefail
 cd "$(dirname "$0")/.."
 command -v npm >/dev/null || { echo 'Node.js >=22 und npm erforderlich.' >&2; exit 1; }

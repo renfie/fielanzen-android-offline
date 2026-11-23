@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// Copyright (C) 2026 René Fieler (RenFie)
+//
+// This program is free software under the GNU GPL v2.
+// See LICENSE for the complete license text.
+
 import type {RemoteAccount,RemoteBooking,RemoteCategory,DashboardSession,PendingWrite,RemotePayee} from './dashboard-protocol.js';
 import {readBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 export interface ServerViewData {server:string;session:DashboardSession|null;accounts:RemoteAccount[];categories:RemoteCategory[];payees:RemotePayee[];bookings:RemoteBooking[];nextBefore:string|null;error:string;loading:boolean;pending:PendingWrite|null;visibleCount:number;homeVisibleCount:number;searchHome:string;searchBookings:string;}
