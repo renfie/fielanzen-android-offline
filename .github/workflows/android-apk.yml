@@ -5,6 +5,12 @@ on:
     branches: [main]
     tags: ['v0.1.0-alpha.*']
   workflow_dispatch:
+    inputs:
+      publish_signed_release:
+        description: 'Publish signed prerelease for package.json version (main branch only)'
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
@@ -12,6 +18,8 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.release_version.outputs.release_tag }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -27,14 +35,24 @@ jobs:
           packages: platform-tools
       - name: Install Android platform
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'platform-tools'
-      - name: Check source version and tag
+      - name: Check source version and release mode
+        id: release_version
         shell: bash
+        env:
+          MANUAL_RELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.publish_signed_release }}
         run: |
           set -euo pipefail
           VERSION="$(node -p 'require("./package.json").version')"
+          TAG="v$VERSION"
+          [[ "$VERSION" =~ ^0\.1\.0-alpha\.[0-9]+$ ]] || { echo 'Unsupported alpha version.' >&2; exit 1; }
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "v$VERSION" ]]; then
-            echo 'Tag does not match the application version.' >&2
+          echo "release_tag=$TAG" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF_TYPE" == tag && "$GITHUB_REF_NAME" != "$TAG" ]]; then
+            echo 'Tag does not match package.json version.' >&2
+            exit 1
+          fi
+          if [[ "$MANUAL_RELEASE" == true && "$GITHUB_REF" != 'refs/heads/main' ]]; then
+            echo 'Manual signed releases must run on main.' >&2
             exit 1
           fi
       - name: Install dependencies
@@ -51,7 +69,7 @@ jobs:
           npx --no-install cap sync android
           python3 scripts/configure-android.py
       - name: Debug APK – test only (non-tagged builds)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
         shell: bash
         run: |
           set -euo pipefail
@@ -60,14 +78,14 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk "release/FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk"
           (cd release && sha256sum "FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk" > "FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk.sha256")
       - uses: actions/upload-artifact@v4
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
         with:
           name: fielanzen-debug-${{ github.sha }}
           path: release/*
           retention-days: 14
           if-no-files-found: error
-      - name: Sign release APK (tag only; user-owned signing key)
-        if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') }}
+      - name: Sign release APK (tag or manual release; user-owned key)
+        if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') || (github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -98,15 +116,15 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$DEST"
           (cd release && sha256sum "FieLanzen-Offline-${VERSION}-release.apk" > "FieLanzen-Offline-${VERSION}-release.apk.sha256")
       - uses: actions/upload-artifact@v4
-        if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') }}
+        if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') || (github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
         with:
-          name: fielanzen-signed-${{ github.ref_name }}
+          name: fielanzen-signed-${{ steps.release_version.outputs.release_tag }}
           path: release/*
           retention-days: 30
           if-no-files-found: error
 
   publish-release:
-    if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') }}
+    if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') || (github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
     needs: build-apk
     runs-on: ubuntu-latest
     permissions:
@@ -114,17 +132,21 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: fielanzen-signed-${{ github.ref_name }}
+          name: fielanzen-signed-${{ needs.build-apk.outputs.release_tag }}
           path: release
       - name: Publish signed prerelease with checksum
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ needs.build-apk.outputs.release_tag }}
           REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
           test "$(find release -name '*-release.apk' -type f | wc -l)" -eq 1
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release $TAG already exists. Refusing to publish twice." >&2
+            exit 1
+          fi
           gh release create "$TAG" release/*.apk release/*.sha256 \
             --repo "$REPO" --target "$GITHUB_SHA" --prerelease \
             --title "FieLanzen Offline $TAG" \
