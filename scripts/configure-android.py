@@ -95,7 +95,7 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override public void onCreate(Bundle savedInstanceState) {
-        // Protect task previews before Capacitor/WebView startup when lock is enabled.
+        // Do not show protected finance data in Android task previews.
         if (getSharedPreferences(FieLanzenAppLockPlugin.PREFS, Context.MODE_PRIVATE)
             .getBoolean(FieLanzenAppLockPlugin.ENABLED, false)) {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
@@ -104,22 +104,30 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(FieLanzenSecureSessionPlugin.class);
         registerPlugin(FieLanzenAppLockPlugin.class);
         registerPlugin(FieLanzenMtlsHttpPlugin.class);
-        // Respect physical Android system bars, including camera cutouts/edge-to-edge modes.
-        // If Android already positions the WebView below the status bar, apply no extra top inset.
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+        // Android 15/16 force edge-to-edge. We own all insets in ONE place:
+        // the content root, never both the WebView and CSS/Capacitor.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         super.onCreate(savedInstanceState);
-        View web = getBridge().getWebView();
-        ViewCompat.setOnApplyWindowInsetsListener(web, (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.statusBars());
-            int[] position = new int[2];
-            v.getLocationOnScreen(position);
-            int top = Math.max(0, bars.top - position[1]);
-            if (v.getPaddingTop() != top) {
-                v.setPadding(v.getPaddingLeft(), top, v.getPaddingRight(), v.getPaddingBottom());
+        final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
+        ViewCompat.setOnApplyWindowInsetsListener(contentRoot, (view, windowInsets) -> {
+            // Status bar, camera/display cutout, 3-button/gesture navigation.
+            Insets system = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            // The WebView and its fixed bottom navigation must also move ABOVE
+            // the on-screen keyboard, including Android's edge-to-edge IME mode.
+            Insets keyboard = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+            int bottom = windowInsets.isVisible(WindowInsetsCompat.Type.ime())
+                ? Math.max(system.bottom, keyboard.bottom) : system.bottom;
+            if (view.getPaddingLeft() != system.left || view.getPaddingTop() != system.top ||
+                view.getPaddingRight() != system.right || view.getPaddingBottom() != bottom) {
+                view.setPadding(system.left, system.top, system.right, bottom);
             }
-            return insets;
+            return windowInsets;
         });
-        web.post(() -> ViewCompat.requestApplyInsets(web));
+        // White app chrome: use dark Android status/navigation icons.
+        WindowCompat.getInsetsController(getWindow(), contentRoot).setAppearanceLightStatusBars(true);
+        WindowCompat.getInsetsController(getWindow(), contentRoot).setAppearanceLightNavigationBars(true);
+        contentRoot.post(() -> ViewCompat.requestApplyInsets(contentRoot));
     }
 }
 ''')

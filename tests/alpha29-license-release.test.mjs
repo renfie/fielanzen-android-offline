@@ -18,17 +18,13 @@ test('release workflow requires private signing secrets, verifies and publishes 
   for(const secret of ['ANDROID_KEYSTORE_BASE64','ANDROID_KEYSTORE_PASSWORD','ANDROID_KEY_ALIAS','ANDROID_KEY_PASSWORD']) assert.match(s,new RegExp(secret));
   assert.match(s,/apksigner.*verify/);
   assert.match(s,/gh release create/);
-  assert.match(s,/publish_signed_release/);
-  assert.match(s,/github.event_name == 'workflow_dispatch'/);
-  assert.match(s,/release_tag=/);
-  assert.match(s,/main branch only/);
   assert.match(s,/if-no-files-found: error/);
   assert.match(s,/build-tools;36\.0\.0/);
 });
 test('project version bumped while package ID remains compatible',()=>{
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'0.1.0-alpha.29');
+  assert.equal(pkg.version,'0.1.0-alpha.30');
   assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
   assert.match(read('scripts/configure-android.py'),/version_code=int\(match.group\(1\)\)-1/);
-  assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.29'/);
+  assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.30'/);
 });

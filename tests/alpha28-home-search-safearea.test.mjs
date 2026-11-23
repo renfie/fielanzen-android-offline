@@ -27,9 +27,9 @@ test('Android safe area is native-detected and supports PWA env fallback',()=>{
   const android=source('scripts/configure-android.py');
   const css=source('style.css');
   assert.match(android,/WindowCompat\.setDecorFitsSystemWindows/);
-  assert.match(android,/WindowInsetsCompat\.Type\.statusBars/);
-  assert.match(android,/getLocationOnScreen/);
-  assert.match(android,/Math\.max\(0, bars\.top - position\[1\]\)/);
+  assert.match(android,/WindowInsetsCompat\.Type\.systemBars/);
+  assert.match(android,/WindowInsetsCompat\.Type\.displayCutout/);
+  assert.match(android,/WindowInsetsCompat\.Type\.ime/);
   assert.match(css,/safe-area-inset-top/);
   assert.match(css,/calc\(12px \+ var\(--ui-safe-top\)\)/);
   assert.match(css,/dialog\[open\]/);

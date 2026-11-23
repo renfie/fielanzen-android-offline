@@ -8,7 +8,7 @@
 
 <p align="center"><strong>Eigenständige Android-Finanzverwaltung – zuerst lokal, optional mit Dashboard-Verbindung.</strong></p>
 
-**Aktueller Quellstand:** `0.1.0-alpha.29` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
+**Aktueller Quellstand:** `0.1.0-alpha.30` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 
@@ -37,7 +37,7 @@ Benötigt werden Node.js 22+, Java 21 und ein Android SDK. Das VM-Skript kann fe
 bash scripts/build-android-vm.sh
 ```
 
-Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.29-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
+Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.30-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
 
 **Vor jedem Update:** Vollständige JSON-Sicherung außerhalb der App erstellen. Zur Aktualisierung müssen **Paketkennung und Signaturschlüssel identisch** sein. Nicht deinstallieren und keine App-Daten löschen, um einen Signaturfehler zu umgehen. Siehe [VM-Anleitung](ANLEITUNG-ANDROID-DEBIAN.txt) und [Installationsanleitung](docs/INSTALLATION.de.md).
 
@@ -76,6 +76,10 @@ Eigene Projektbestandteile stehen unter [GPL-2.0-only](LICENSE); Hinweise zu Dri
 
 ## Automatische APKs und signierte GitHub-Releases
 
-Jeder Push auf `main` startet einen Android-Debug-Build (Actions-Artefakt mit temporärem Debug-Signaturschlüssel). Für einen **signierten Release** unter **Actions → Android APK – build and signed prerelease → Run workflow** den Branch `main` wählen und die Veröffentlichungsoption aktivieren. Nach der Signaturprüfung legt GitHub selbst das passende Versionstag an und veröffentlicht die APK – ohne persönlichen Git-Token oder lokale VM. Ein manuell gesetztes Git-Tag wird weiterhin unterstützt. Siehe [Anleitung auf Deutsch](docs/RELEASES.de.md) oder [English](docs/RELEASES.en.md). Debug-Artefakte aus CI sind nicht als dauerhaft updatefähige Releases geeignet.
+Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**. Sobald die Android-Versionsnummer in `package.json` auf `main` steigt (z. B. von Alpha 29 auf Alpha 30), erstellt GitHub Actions **automatisch** die neue signierte APK und ihre SHA256-Prüfsumme und veröffentlicht beides unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases). Das passende Git-Tag wird automatisch erzeugt. **Weder persönlicher GitHub-Token noch Linux-VM oder zusätzlicher Klick** sind beim regulären Versionswechsel erforderlich. Der manuelle Weg „Run workflow → Publish signed prerelease“ bleibt optional und verhindert doppelte Releases. Signaturschlüssel und Passwörter bleiben als GitHub-Secrets und in deiner unabhängigen Sicherung erhalten.
 
-**Lizenz in der App:** Unter **Mehr → Lizenz & Open Source** werden in lokalem und Servermodus eine Übersicht zu GPLv2-Rechten und -Pflichten, der vollständige Lizenztext (offline) und die Projekt-/Fremdsoftwarehinweise angezeigt.
+[Release-Anleitung (Deutsch)](docs/RELEASES.de.md) · [English](docs/RELEASES.en.md).
+
+**GPLv2 in der App:** Unter **Mehr → GPLv2 · Rechte & Pflichten** stehen die wichtigsten Nutzungs-/Änderungs-/Weitergaberechte und Pflichten bei Weitergabe unmittelbar im Einstellungsbereich, sowohl lokal als auch im Servermodus. Über **Volltext** sind der vollständige englische GPL-Text, der Gewährleistungsausschluss und die Hinweise zu Fremdsoftware auch offline erreichbar.
+
+**Statusleisten-Schutz:** Android verwendet nur noch einen nativen WindowInsets-Mechanismus für Statusleiste, Kameraaussparung, untere Systemnavigation und Tastatur (keine konkurrierenden Capacitor-/CSS-Abstände). In Web/PWA bleibt der CSS-Safe-Area-Fallback. Ein echter Gerätetest steht noch aus.

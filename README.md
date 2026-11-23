@@ -8,7 +8,7 @@
 
 <p align="center"><strong>A standalone Android personal-finance app — local first, optional dashboard connection.</strong></p>
 
-**Current source version:** `0.1.0-alpha.29` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
+**Current source version:** `0.1.0-alpha.30` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
 
 FieLanzen Offline is a separate Android application built with **TypeScript, Capacitor and SQLite**. Accounts, payees, categories, bookings, transfers, recurring rules and reports can be managed on the phone without a server. A separately enabled server mode connects to the [FieLanzen/Financisto Dashboard](https://github.com/renfie/financisto-dashboard) through its Mobile API. The two data sources are **not silently merged or synchronized**.
 
@@ -37,7 +37,7 @@ Use Node.js 22+, Java 21 and an Android SDK, or let the VM script install missin
 bash scripts/build-android-vm.sh
 ```
 
-Expected output: `release/FieLanzen-Offline-0.1.0-alpha.29-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
+Expected output: `release/FieLanzen-Offline-0.1.0-alpha.30-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
 
 **Important:** Make an external JSON backup before updating an installed app. Android updates require the **same signing key** and package ID. Do not uninstall the app or clear its data to work around a signature mismatch. See [German VM instructions](ANLEITUNG-ANDROID-DEBIAN.txt) and [installation guide](docs/INSTALLATION.en.md).
 
@@ -76,6 +76,10 @@ Own project components are licensed under [GPL-2.0-only](LICENSE). See [NOTICE.m
 
 ## Automatic APK builds and signed GitHub releases
 
-Every push to `main` triggers an Android debug build (Actions artifact, temporary debug signing key). To publish a signed prerelease, open **Actions → Android APK – build and signed prerelease → Run workflow**, select `main` and enable the publish checkbox. GitHub creates the matching tag after signing verification, with no Personal Access Token or Linux VM required. Pushing a matching version tag also remains supported. See [Signed releases — English](docs/RELEASES.en.md) or [Deutsch](docs/RELEASES.de.md). Do not mistake CI debug APKs for update-compatible release APKs.
+Every push to `main` without a **new version** builds a **debug test APK**. When the Android app version in `package.json` increases on `main` (e.g. Alpha 29 → Alpha 30), GitHub Actions **automatically** builds, tests, signs and publishes the new prerelease APK + SHA256 checksum under [Releases](https://github.com/renfie/fielanzen-android-offline/releases). The matching Git tag is created by the workflow. **No personal token, Linux VM or separate approval click is needed** for version-bumped releases. A manual "Run workflow → Publish signed prerelease" option also remains available; it won't create a duplicate release for the same version. The signing keystore and credentials remain in protected GitHub Secrets and in the owner's independent offline backup.
 
-**In-app GPL notice:** Under **Mehr → Lizenz & Open Source**, both local and server modes show the GPLv2 rights and obligations summary, full offline license text and attribution notices.
+[Release guide (English)](docs/RELEASES.en.md) · [Deutsche Release-Anleitung](docs/RELEASES.de.md).
+
+**License in the app:** Under **Mehr → GPLv2 · Rechte & Pflichten**, both local and dashboard-server modes show the rights and distribution obligations directly. The full GPL v2 text, warranty notice and third-party notices remain bundled offline under **Volltext**.
+
+**Safe area:** Android uses a single native window-insets handler for status bar, display cutout, bottom navigation and on-screen keyboard (no conflicting Capacitor/CSS padding). Web/PWA continues to use CSS safe-area insets. Real-device verification is still required.

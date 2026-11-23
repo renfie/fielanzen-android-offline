@@ -4,6 +4,13 @@
 
 The German change log contains the detailed historical alpha notes. The highlights below describe current version milestones rather than claiming all older tests pass.
 
+## 0.1.0-alpha.30 (2026-11-23) – Android safe areas, GPLv2, automated signed releases
+- One native Android content-root inset handler now covers status bar, display cutout, bottom navigation and the on-screen keyboard, avoiding duplicate Capacitor/CSS padding on Android 15/16. Browser/PWA continues to use CSS safe-area variables.
+- GPLv2 user rights and redistribution obligations appear directly in Settings; the full GPL and attribution notices remain available offline.
+- Updating the application version on GitHub `main` automatically initiates a signed prerelease build with SHA256. Ordinary commits still build test-only debug artifacts.
+- Android application ID, personal financial storage and complete Financisto export are unchanged; the separate dashboard is untouched.
+- Actual Galaxy S26 rendering and migration from an existing debug signature are not yet device-verified.
+
 ## 0.1.0-alpha.28
 - Overview and booking list share the 30/50/100 default page size and sorting preferences.
 - Both views have search and load-more controls; server search is limited to fetched API pages.

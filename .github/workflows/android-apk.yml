@@ -93,7 +93,7 @@ jobs:
       - name: Regression tests
         run: |
           npx tsc -p tsconfig.preview.json
-          node --test tests/alpha26-full-backup.test.mjs tests/alpha27-display-lock.test.mjs tests/alpha28-home-search-safearea.test.mjs tests/alpha29-license-release.test.mjs
+          node --test tests/alpha26-full-backup.test.mjs tests/alpha27-display-lock.test.mjs tests/alpha28-home-search-safearea.test.mjs tests/alpha29-license-release.test.mjs tests/alpha30-licensing-safearea-release.test.mjs
       - name: Create native Android project
         run: |
           npx --no-install cap add android

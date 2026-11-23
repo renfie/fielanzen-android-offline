@@ -28,7 +28,7 @@ import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.29';
+export const APP_VERSION='0.1.0-alpha.30';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -835,8 +835,13 @@ function dataCheckHtml():string {
 }
 /** Licensed source and attribution are shipped in the APK, so this page works offline. */
 function licenseSettingsHtml():string {
-  return `<section class="card"><div class="section-title"><h2>Lizenz & Open Source</h2><button type="button" class="btn secondary" data-action="app-license">Anzeigen</button></div>
-  <p class="muted small">GNU GPL Version 2 (GPL-2.0-only). Vollständiger Lizenztext, Rechte, Pflichten, Gewährleistungsausschluss und Hinweise zu verwendeter Fremdsoftware – offline lesbar.</p></section>`;
+  return `<section class="card" id="license-and-open-source"><div class="section-title"><h2>GPLv2 · Rechte & Pflichten</h2><button type="button" class="btn secondary" data-action="app-license" aria-label="Vollständigen GPLv2-Lizenztext und Rechtshinweise anzeigen">Volltext</button></div>
+  <p class="muted small">FieLanzen Offline steht unter der <strong>GNU General Public License Version 2 (GPL-2.0-only)</strong>. Die wichtigsten Bestimmungen sind unmittelbar hier nachlesbar:</p>
+  <div class="gpl-quick-summary">
+    <div><strong>Deine Rechte</strong><p>Frei nutzen, Quellcode einsehen, eigene Änderungen vornehmen und das Programm weitergeben – auch kommerziell.</p></div>
+    <div><strong>Deine Pflichten bei Weitergabe</strong><p>Lizenz- und Copyright-Hinweise erhalten, Änderungen kennzeichnen, GPLv2-Bedingungen einhalten und bei Binärweitergabe den korrespondierenden Quellcode gemäß § 3 bereitstellen.</p></div>
+  </div>
+  <p class="muted small">Rein private Änderungen musst du nicht veröffentlichen. Die Software wird ohne Gewährleistung bereitgestellt, soweit rechtlich zulässig. Der maßgebliche englische Volltext und die Hinweise zu Fremdsoftware sind <strong>offline</strong> über „Volltext“ erreichbar.</p></section>`;
 }
 function showLicenseDialog():void {
   const dlg=document.createElement('dialog');
@@ -848,10 +853,11 @@ function showLicenseDialog():void {
       <li>Das Programm für beliebige Zwecke ausführen.</li>
       <li>Den Quellcode lesen, untersuchen und verändern.</li>
       <li>Originale und veränderte Fassungen weitergeben, auch gegen Entgelt, unter den Lizenzbedingungen.</li>
+      <li>Private Änderungen nur für dich verwenden, ohne sie veröffentlichen zu müssen (§§ 0, 2).</li>
     </ul><h3>Pflichten bei Weitergabe</h3><ul>
-      <li>Urheberrechts- und Lizenzhinweise erhalten, GPL-Version 2 beilegen und Änderungen kennzeichnen.</li>
-      <li>Für weitergegebene abgeleitete Werke die GPLv2-Bedingungen einhalten; bei Binärweitergabe den vollständigen korrespondierenden Quellcode gemäß GPLv2 §3 mitliefern oder ein dort zugelassenes Angebot machen.</li>
-      <li>Empfängern die GPL-Rechte nicht durch zusätzliche Einschränkungen entziehen.</li>
+      <li>Bei Weitergabe Lizenz- und Urheberrechtshinweise erhalten; GPL-Version 2 beilegen. Bei geänderten Dateien die Änderungen und deren Datum kenntlich machen (§§ 1–2).</li>
+      <li>Weitergegebene abgeleitete Gesamtwerke unter GPLv2 lizenzieren (§ 2). Bei Weitergabe einer Binärdatei den vollständigen korrespondierenden Quellcode bereitstellen oder eine der zulässigen Alternativen nach § 3 erfüllen.</li>
+      <li>Empfängern die GPL-Rechte nicht durch zusätzliche Einschränkungen entziehen (§ 6). Keine Annahme, dass private Nutzung automatisch eine Quellcode-Veröffentlichung auslöst.</li>
     </ul>
     <p class="muted small"><strong>Keine Gewährleistung:</strong> Die GPLv2 sieht, soweit gesetzlich zulässig, keine Garantie vor. Diese deutschsprachige Übersicht ist unverbindlich; maßgeblich ist der vollständige englische Lizenztext.</p>
     <details class="audit-list license-full"><summary><strong>Vollständige GNU GPL Version 2 anzeigen</strong></summary><pre>${esc(gplText)}</pre></details>

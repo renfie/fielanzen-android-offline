@@ -5,8 +5,7 @@
 ## Was automatisch passiert
 
 - Jeder Push auf `main` baut nach erfolgreicher Prüfung eine **Debug-APK** als GitHub-Actions-Artefakt. Ihr automatisch generierter Debug-Schlüssel ist **nicht dauerhaft stabil**; sie ist kein verlässliches Update für eine schon installierte Version.
-- Unter **Actions → Android APK – build and signed prerelease → Run workflow** kann ein signierter Release direkt ausgelöst werden. GitHub erstellt nach der Signaturprüfung das Versionstag automatisch. Alternativ kann ein passendes Git-Tag den Build auslösen.
-- Ein Versions-Tag wie `v0.1.0-alpha.29` startet ebenfalls einen Release-Build. Nur wenn die vier GitHub-Secrets vorhanden sind und der Build samt Signaturprüfung erfolgreich ist, wird ein **signiertes APK** samt SHA256 als GitHub-*Prerelease* veröffentlicht. Die Quellcode-ZIP-Datei gehört über das Tag dazu.
+- Ein Versionswechsel auf `main` startet den signierten Release-Build automatisch; ein passendes Git-Tag oder ein ausdrücklich gestarteter manueller Workflow sind weiterhin möglich. Nur wenn die vier GitHub-Secrets vorhanden sind und der Build samt Signaturprüfung erfolgreich ist, wird ein **signiertes APK** samt SHA256 als GitHub-*Prerelease* veröffentlicht. Die Quellcode-ZIP-Datei gehört über das Tag dazu.
 - Das separate Docker-Dashboard wird dabei weder verändert noch veröffentlicht.
 
 ## Einmalig: eigener Signaturschlüssel
@@ -38,22 +37,20 @@ Anschließend in GitHub im Repository **Settings → Secrets and variables → A
 
 GitHub Secrets sind für die signierende Workflow-Ausführung gedacht. Der private Schlüssel wird nur temporär im Runner abgelegt und nicht in den Release-Artefakten gespeichert.
 
-## Signierte Version auf GitHub veröffentlichen – ohne Linux-VM oder PAT
+## Release nach Versionswechsel: automatisch
 
-Die vier Signing-Secrets sind einmalig einzurichten. **Danach werden weder ein Personal Access Token noch die Linux-VM für neue Releases benötigt.**
+Nach der einmaligen Einrichtung der vier Secrets benötigt der reguläre Release **keinen persönlichen GitHub-Token und keine Linux-VM**. Wird auf Branch `main` die Versionsnummer in `package.json` von beispielsweise `0.1.0-alpha.29` auf `0.1.0-alpha.30` erhöht, prüft GitHub Actions den Versionswechsel und baut automatisch die signierte APK mit SHA256. Erst nach erfolgreichem Build, Tests und Signaturprüfung erzeugt der Workflow das passende Versionstag und veröffentlicht den Prerelease unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
 
-1. [**Actions → Android APK – build and signed prerelease**](https://github.com/renfie/fielanzen-android-offline/actions/workflows/android-apk.yml) öffnen.
-2. **Run workflow** anklicken.
-3. Unter **Use workflow from** den Branch **main** auswählen.
-4. Die Checkbox **Publish signed prerelease for package.json version (main branch only)** aktivieren.
-5. **Run workflow** klicken.
-6. In **Actions** prüfen, ob Build, Tests, Signaturprüfung und Veröffentlichung erfolgreich waren. Danach liegt die signierte APK mit SHA256 unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases). Der Workflow erzeugt das passende Git-Tag.
+Quellcode-/Dokumentationsänderungen ohne neue Versionsnummer erzeugen dagegen nur Debug-Test-APKs, **keinen neuen Release**.
 
-**Ohne Häkchen** wird nur eine Debug-Test-APK gebaut. Keine separate Veröffentlichung über **Draft a new release** anlegen: Der Workflow erzeugt Tag und Prerelease selbst und verweigert eine doppelte Veröffentlichung derselben Version.
+### Optionaler manueller Weg
 
-Für spätere Releases vor dem Start die Versionsnummer in `package.json`, im App-Quelltext und in den Tests konsistent erhöhen, beispielsweise auf Alpha 30. Der Button baut die aktuelle Version auf `main`, nicht die lokale Arbeitskopie.
+1. [Actions → Android APK – build and signed prerelease](https://github.com/renfie/fielanzen-android-offline/actions/workflows/android-apk.yml) öffnen.
+2. **Run workflow** auswählen, Branch **main** wählen.
+3. **Publish signed prerelease for package.json version** aktivieren und starten.
+4. Nicht zusätzlich im Menü „Draft a new release“ veröffentlichen. Der Workflow erstellt den Release selbst und lehnt doppelte Veröffentlichungen derselben Version ab.
 
-Wer über Git verfügt, kann alternativ weiterhin ein passendes Versionstag pushen. Das ist für den normalen Ablauf aber nicht nötig.
+Bei späteren Releases müssen die Versionsangaben im App-Quelltext, in `package.json` und in den Tests zusammenpassen. Die vorhandenen Secrets bleiben unverändert. Ein über Git gepushtes passendes Versionstag funktioniert alternativ weiterhin.
 
 ## Warnung bei bereits installierter Debug-APK
 

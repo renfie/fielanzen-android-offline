@@ -342,11 +342,11 @@ html[data-theme="dark"] .booking-type-chip{filter:brightness(.92)}
 .app-lock-mark{margin:auto;background:#b49a50;color:#1d2831;border-radius:18px;display:grid;place-items:center;font-size:2rem;font-weight:900;width:68px;height:68px}
 .app-lock-card .btn{width:100%}
 
-/* Alpha 28: Prevent overlap with Android status bar, cutout and gesture navigation.
- * Native Android WebView receives status-bar padding from WindowInsetsCompat; browser/PWA
- * use CSS safe-area-inset-* directly. No fixed hard-coded device status bar height. */
+/* Alpha 30: ONE source of insets. MainActivity pads Android content root on all edges
+ * (status bar, cutout, navigation + IME). Capacitor SystemBars inset handling is
+ * disabled to prevent conflicting listeners. Browser/PWA use CSS env() instead. */
 :root{--ui-safe-top:env(safe-area-inset-top, 0px);--ui-safe-bottom:env(safe-area-inset-bottom, 0px);}
-html.native-android{--ui-safe-top:0px;}
+html.native-android{--ui-safe-top:0px;--ui-safe-bottom:0px;}
 .top{padding-top:calc(12px + var(--ui-safe-top));padding-left:max(16px,env(safe-area-inset-left, 0px));padding-right:max(16px,env(safe-area-inset-right, 0px));}
 .mode-banner{padding-left:max(12px,env(safe-area-inset-left, 0px));padding-right:max(12px,env(safe-area-inset-right, 0px));}
 .nav{padding-bottom:calc(7px + var(--ui-safe-bottom));}
@@ -363,3 +363,14 @@ dialog.license-modal{width:min(720px,calc(100vw - 20px));max-height:calc(100dvh 
 .license-body li{margin-bottom:6px;}
 .license-body h3{font-size:1rem;margin:18px 0 8px;}
 .license-body pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.75rem;line-height:1.45;max-height:45dvh;overflow:auto;padding:12px;background:#f4f5f5;color:#283239;border-radius:8px;}
+
+/* Alpha 30: The content root already excludes Android system bars.
+ * Sticky header / fixed navigation / modals remain within its safe viewport. */
+html.native-android .top{top:0;}
+html.native-android dialog[open]{max-height:calc(100dvh - 24px);}
+html.native-android .app-locked{inset:0;}
+.gpl-quick-summary{border-top:1px solid #e9eced;margin-top:10px;padding-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.gpl-quick-summary>div{background:#f7f8f8;border-radius:10px;padding:11px 12px}
+.gpl-quick-summary strong{display:block;margin-bottom:5px;font-size:.85rem}
+.gpl-quick-summary p{font-size:.78rem;line-height:1.45;color:#59666d;margin:0}
+@media(max-width:410px){.gpl-quick-summary{grid-template-columns:1fr}}

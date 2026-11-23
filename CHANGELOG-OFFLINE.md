@@ -2,6 +2,13 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.30 (23.11.2026) – Systemleisten, GPLv2 und automatische signierte Releases
+- Android 15/16: `MainActivity` behandelt Statusleiste, Kameraaussparung, Systemnavigation und Bildschirmtastatur mit genau einem nativen WindowInsets-Mechanismus am Content-Root. Die konkurrierende Capacitor-SystemBars-Inset-Behandlung wird deaktiviert; CSS-Safe-Area bleibt auf Web/PWA beschränkt.
+- In den Einstellungen („Mehr“) stehen GPLv2-Rechte und -Pflichten bei Weitergabe bereits sichtbar. Der vollständige GPL-Text und Copyright-/Fremdsoftwarehinweise bleiben offline im Volltext-Dialog.
+- Neue Android-Versionsnummern auf GitHub `main` lösen nach bestandenen Tests und Signaturprüfung automatisch den signierten Prerelease inkl. SHA256 aus; andere Commits erzeugen nur Debug-Test-APKs.
+- Bestehende Paketkennung `de.fielanzen.offline`, Android-Datenbank und funktionierender vollständiger Financisto-Export bleiben unverändert. Kein Dashboard-Update.
+- Gerätetest auf Samsung Galaxy S26 und Signaturwechsel von einer bestehenden Debug-App müssen weiterhin separat geprüft werden.
+
 ## 0.1.0-alpha.28 – Übersicht, Suche, Nachladen und Android-Statusleiste
 - Sowohl lokale als auch serverseitige Übersicht übernehmen die Buchungsmenge (30/50/100) und die Sortiereinstellung.
 - Suche in der Übersicht und unter Buchungen, jeweils ohne Eingabefeld bei jedem Tastendruck neu aufzubauen.

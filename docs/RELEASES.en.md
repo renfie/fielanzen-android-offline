@@ -4,7 +4,7 @@
 
 ## Automated build
 
-Each push to `main` builds a debug APK as a GitHub Actions artifact. The CI-generated **debug signing certificate is temporary**, so do not rely on it for updates. A tag matching the current project version, e.g. `v0.1.0-alpha.29`, builds and signs an APK using your own keystore stored in GitHub repository secrets. A release is published only after signing verification succeeds. Every release includes a SHA256 file, and GitHub provides the source-code archive for the tagged commit. This workflow does not alter the separate Docker dashboard.
+Each push to `main` builds a debug APK as a GitHub Actions artifact. The CI-generated **debug signing certificate is temporary**, so do not rely on it for updates. A version increase on `main` (or a matching tag, or a manually requested signed run) builds and signs an APK using your own keystore stored in GitHub repository secrets. A release is published only after signing verification succeeds. Every release includes a SHA256 file, and GitHub provides the source-code archive for the tagged commit. This workflow does not alter the separate Docker dashboard.
 
 ## One-time signing setup
 
@@ -29,22 +29,20 @@ Provide the requested passwords interactively. Under **Repository Settings → S
 | `ANDROID_KEY_ALIAS` | `fielanzen` |
 | `ANDROID_KEY_PASSWORD` | Private-key password (often the same as the keystore password for PKCS12) |
 
-## Publish a signed release from GitHub Actions – without local Git authentication
+## Automatic signed releases on version bumps
 
-The four signing secrets are configured once. **No Personal Access Token or Linux VM is required for subsequent releases.**
+Once the four secrets are configured, **no personal access token or Linux VM is needed for routine releases**. Increasing the application version in `package.json` on `main` (for example from Alpha 29 to Alpha 30) automatically triggers the Android signed-release build. After all tests and signature verification succeed, the workflow creates the matching Git tag and publishes the APK and SHA256 checksum under [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
 
-1. Open [**Actions → Android APK – build and signed prerelease**](https://github.com/renfie/fielanzen-android-offline/actions/workflows/android-apk.yml).
-2. Click **Run workflow**.
-3. Select **main** under **Use workflow from**.
-4. Enable **Publish signed prerelease for package.json version (main branch only)**.
-5. Click **Run workflow**.
-6. Monitor the build and signing verification in Actions. On success, GitHub creates the matching version tag and publishes the signed APK with its SHA256 checksum under [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
+Ordinary source and documentation commits **without** a version increase produce a debug test artifact only, not a new release.
 
-**Unchecked** means a debug-test APK only. Do **not** separately click GitHub's **Draft a new release** button: the workflow publishes the tag and prerelease itself and prevents duplicate version releases.
+### Optional manual release
 
-For later versions, update the version consistently in `package.json`, app source and tests first. The release builds from `main`, not a local checkout.
+1. Open [Actions → Android APK – build and signed prerelease](https://github.com/renfie/fielanzen-android-offline/actions/workflows/android-apk.yml).
+2. Select **Run workflow**, choose the **main** branch.
+3. Enable **Publish signed prerelease for package.json version** and start the run.
+4. Do not publish a separate GitHub "Draft a new release" – the workflow creates the tag and release and refuses duplicate version releases.
 
-Pushing a matching `v0.1.0-alpha.N` tag remains an optional alternative if Git authentication is available.
+For later versions, update `package.json`, app source and version-specific tests consistently. Signed builds always use the existing protected secrets. Pushing a matching Git version tag remains an optional alternative.
 
 ## Existing installs
 
