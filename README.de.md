@@ -76,6 +76,6 @@ Eigene Projektbestandteile stehen unter [GPL-2.0-only](LICENSE); Hinweise zu Dri
 
 ## Automatische APKs und signierte GitHub-Releases
 
-Jeder Push auf `main` startet einen Android-Debug-Build (Actions-Artefakt mit temporärem Debug-Signaturschlüssel). Ein zur Projektversion passendes Git-Tag erstellt nach Einrichtung der vier GitHub-Secrets eine **signierte Vorabversion**. Siehe [Anleitung auf Deutsch](docs/RELEASES.de.md) oder [English](docs/RELEASES.en.md). Debug-Artefakte aus CI sind nicht als dauerhaft updatefähige Releases geeignet.
+Jeder Push auf `main` startet einen Android-Debug-Build (Actions-Artefakt mit temporärem Debug-Signaturschlüssel). Für einen **signierten Release** unter **Actions → Android APK – build and signed prerelease → Run workflow** den Branch `main` wählen und die Veröffentlichungsoption aktivieren. Nach der Signaturprüfung legt GitHub selbst das passende Versionstag an und veröffentlicht die APK – ohne persönlichen Git-Token oder lokale VM. Ein manuell gesetztes Git-Tag wird weiterhin unterstützt. Siehe [Anleitung auf Deutsch](docs/RELEASES.de.md) oder [English](docs/RELEASES.en.md). Debug-Artefakte aus CI sind nicht als dauerhaft updatefähige Releases geeignet.
 
 **Lizenz in der App:** Unter **Mehr → Lizenz & Open Source** werden in lokalem und Servermodus eine Übersicht zu GPLv2-Rechten und -Pflichten, der vollständige Lizenztext (offline) und die Projekt-/Fremdsoftwarehinweise angezeigt.
