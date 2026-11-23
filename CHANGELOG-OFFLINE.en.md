@@ -32,3 +32,8 @@ The German change log contains the detailed historical alpha notes. The highligh
 - Offline accounts, SQLite persistence, JSON backup, Financisto import/export, recurring rules, reports, native Android bridge and optional Mobile API client.
 
 See the [full German change log](CHANGELOG-OFFLINE.md) for earlier work.
+
+## 0.1.0-alpha.29 (2026-11-23)
+- GPLv2 full text and German rights/obligations summary available offline under More in both data modes; includes German and English attribution notices.
+- GitHub Actions now builds a debug APK after each `main` push, and creates signed prereleases only from version tags with user-managed signing secrets.
+- Android versionCode is derived from project alpha version; source and Financisto backup format remain unchanged.

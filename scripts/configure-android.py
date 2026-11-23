@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Idempotent native Android resource/configuration setup; no network calls."""
 from pathlib import Path
-import re, shutil, sys
+import re, shutil, sys, json
 import xml.etree.ElementTree as ET
 root=Path(__file__).resolve().parent.parent
 android=root/'android'
@@ -54,11 +54,16 @@ ET.fromstring(xml)
 for f in (res/'xml'/'backup_rules.xml',res/'xml'/'data_extraction_rules.xml'):
     ET.parse(f)
 
-# Keep the package ID stable across alpha releases; bump Android versionCode.
+# Keep package ID and monotonically increasing Android versionCode stable across releases.
+version=json.loads((root/'package.json').read_text())['version']
+match=re.fullmatch(r'0\.1\.0-alpha\.(\d+)',version)
+if not match:sys.exit('Release verlangt package.json version 0.1.0-alpha.N; VersionCode nicht eindeutig.')
+version_code=int(match.group(1))-1  # Alpha 28 used versionCode 27.
+if version_code<1:sys.exit('Ungültiger Android versionCode.')
 gradle=app_gradle.read_text()
-new,amount=re.subn(r'\bversionCode\s*=?\s*\d+', 'versionCode 27',gradle,count=1)
+new,amount=re.subn(r'\bversionCode\s*=?\s*\d+', f'versionCode {version_code}',gradle,count=1)
 if not amount:sys.exit('app/build.gradle: versionCode nicht gefunden.')
-new,amount=re.subn(r'\bversionName\s*=?\s*[\"\'][^\"\']+[\"\']','versionName "0.1.0-alpha.28"',new,count=1)
+new,amount=re.subn(r'\bversionName\s*=?\s*[\"\'][^\"\']+[\"\']',f'versionName "{version}"',new,count=1)
 if not amount:sys.exit('app/build.gradle: versionName nicht gefunden.')
 app_gradle.write_text(new)
 
@@ -125,4 +130,4 @@ for dependency in ['androidx.work:work-runtime:2.10.5','androidx.documentfile:do
         if marker not in app_gradle: sys.exit('Android Gradle: dependencies-Block fehlt.')
         app_gradle=app_gradle.replace(marker,marker+f"\n    implementation '{dependency}'",1)
 (root/'android/app/build.gradle').write_text(app_gradle)
-print('Android-Konfiguration fertig: Wolf-Icon, WorkManager/SAF-Sicherung, Backup-Cloud-Sperre, Version 0.1.0-alpha.28.')
+print(f'Android-Konfiguration fertig: Wolf-Icon, WorkManager/SAF-Sicherung, Backup-Cloud-Sperre, Version {version}, Code {version_code}.')

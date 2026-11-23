@@ -5,13 +5,13 @@
 ## Repository und Branches
 
 - Repository: `renfie/fielanzen-android-offline`
-- `main`: zuletzt freigegebener Android-Projektstand, derzeit Alpha 28.
+- `main`: zuletzt freigegebener Android-Projektstand, derzeit Alpha 29.
 - Bei größeren Änderungen einen kurzlebigen Feature-Branch und einen Pull Request verwenden.
 - `renfie/financisto-dashboard` wird separat gepflegt. Keine Dashboard-Serverdateien in diesem Repository.
 
 ## Releases
 
-- Android-Versionen erhalten Kennungen wie `android-v0.1.0-alpha.28` und ihr eigenes Changelog.
+- Android-Versionen erhalten Kennungen wie `android-v0.1.0-alpha.29` und ihr eigenes Changelog.
 - Downloadbare APKs erst veröffentlichen, nachdem ein tatsächlicher Android-Build und Gerätetest erfolgreich waren.
 - In diesem Repository wird der **Quellcode** versioniert. `android/`, `node_modules/`, Debug-/Release-APKs, lokale Schlüssel, Finanzdaten und generierte SDK-Dateien werden nicht eingecheckt.
 

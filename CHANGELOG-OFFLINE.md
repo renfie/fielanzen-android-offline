@@ -97,3 +97,8 @@
 ## Tests und Grenzen
 - Unabhängige Original-Financisto-SQLite-Simulation, bestehende Regressionstests, neue API-Sicherheits- und Exportprüfungen.
 - Echte API-Antworten des Dashboard 1.9.58-dev.16, Geräte-Speicher, realer Financisto-Rückimport und Android-APK-Build müssen auf der Ziel-VM/dem Galaxy S26 bestätigt werden.
+
+## 0.1.0-alpha.29 (23.11.2026)
+- Unter Mehr → Lizenz & Open Source vollständige GPLv2 offline verfügbar, mit Rechte-/Pflichtenübersicht und Hinweisen in Deutsch und Englisch; in beiden Datenquellen.
+- GitHub Actions baut automatisch eine Debug-APK; signierte GitHub-Vorabveröffentlichungen ausschließlich mit eigenen, als Secrets hinterlegten Signaturschlüsseln.
+- Android versionCode wird aus der Alpha-Versionsnummer abgeleitet; keine Änderungen am Finanzbackupformat.

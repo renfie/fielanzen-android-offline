@@ -13,5 +13,6 @@ Push-Location android
 try { .\gradlew.bat assembleDebug; if ($LASTEXITCODE -ne 0) { throw 'Gradle fehlgeschlagen' } }
 finally { Pop-Location }
 New-Item -ItemType Directory -Path release -Force | Out-Null
-Copy-Item 'android/app/build/outputs/apk/debug/app-debug.apk' 'release/FieLanzen-Offline-0.1.0-alpha.28-debug.apk' -Force
-Write-Output 'APK: release/FieLanzen-Offline-0.1.0-alpha.28-debug.apk'
+${v} = (Get-Content package.json -Raw | ConvertFrom-Json).version
+Copy-Item 'android/app/build/outputs/apk/debug/app-debug.apk' "release/FieLanzen-Offline-$v-debug.apk" -Force
+Write-Output "APK: release/FieLanzen-Offline-$v-debug.apk"

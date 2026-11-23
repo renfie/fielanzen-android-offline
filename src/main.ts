@@ -24,8 +24,11 @@ import {serverPageHtml,serverSettingsHtml,emptyServerData,formatMinor,serverBook
 import type {ServerViewData} from './server-ui.js';
 import {readBookingList,saveBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {appLock} from './app-lock.js';
+import gplText from '../LICENSE?raw';
+import noticeDe from '../NOTICE.md?raw';
+import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.28';
+export const APP_VERSION='0.1.0-alpha.29';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -830,6 +833,38 @@ function dataCheckHtml():string {
     <div class="btn-row"><button class="btn primary" data-action="export-data-check">Prüfbericht als TXT</button><button class="btn secondary" data-action="export-backup">JSON-Sicherung erstellen</button></div></section>
     <section class="card"><h2>Kontostände</h2>${result.balances.map(b=>`<div class="report-line"><span>${esc(b.name)}</span><strong>${formatEuro(b.cents)}</strong></div>`).join('')}</section>`;
 }
+/** Licensed source and attribution are shipped in the APK, so this page works offline. */
+function licenseSettingsHtml():string {
+  return `<section class="card"><div class="section-title"><h2>Lizenz & Open Source</h2><button type="button" class="btn secondary" data-action="app-license">Anzeigen</button></div>
+  <p class="muted small">GNU GPL Version 2 (GPL-2.0-only). Vollständiger Lizenztext, Rechte, Pflichten, Gewährleistungsausschluss und Hinweise zu verwendeter Fremdsoftware – offline lesbar.</p></section>`;
+}
+function showLicenseDialog():void {
+  const dlg=document.createElement('dialog');
+  dlg.className='license-modal';
+  dlg.setAttribute('aria-label','Lizenz und Open Source');
+  dlg.innerHTML=`<div class="modal-head"><h2>Lizenz & Open Source</h2><button class="btn text close-license" type="button" aria-label="Schließen">✕</button></div>
+    <div class="modal-body license-body"><p><strong>FieLanzen Offline ${esc(APP_VERSION)}</strong><br>Copyright © 2026 RenFie. Eigene Projektbestandteile: GNU GPL Version 2, ausschließlich (GPL-2.0-only).</p>
+    <h3>Deine Rechte</h3><ul>
+      <li>Das Programm für beliebige Zwecke ausführen.</li>
+      <li>Den Quellcode lesen, untersuchen und verändern.</li>
+      <li>Originale und veränderte Fassungen weitergeben, auch gegen Entgelt, unter den Lizenzbedingungen.</li>
+    </ul><h3>Pflichten bei Weitergabe</h3><ul>
+      <li>Urheberrechts- und Lizenzhinweise erhalten, GPL-Version 2 beilegen und Änderungen kennzeichnen.</li>
+      <li>Für weitergegebene abgeleitete Werke die GPLv2-Bedingungen einhalten; bei Binärweitergabe den vollständigen korrespondierenden Quellcode gemäß GPLv2 §3 mitliefern oder ein dort zugelassenes Angebot machen.</li>
+      <li>Empfängern die GPL-Rechte nicht durch zusätzliche Einschränkungen entziehen.</li>
+    </ul>
+    <p class="muted small"><strong>Keine Gewährleistung:</strong> Die GPLv2 sieht, soweit gesetzlich zulässig, keine Garantie vor. Diese deutschsprachige Übersicht ist unverbindlich; maßgeblich ist der vollständige englische Lizenztext.</p>
+    <details class="audit-list license-full"><summary><strong>Vollständige GNU GPL Version 2 anzeigen</strong></summary><pre>${esc(gplText)}</pre></details>
+    <details class="audit-list"><summary><strong>Projekt- und Fremdsoftwarehinweise (DE)</strong></summary><pre>${esc(noticeDe)}</pre></details>
+    <details class="audit-list"><summary><strong>Project & third-party notices (EN)</strong></summary><pre>${esc(noticeEn)}</pre></details>
+    <p class="muted small">Quellcode: <a href="https://github.com/renfie/fielanzen-android-offline" target="_blank" rel="noopener noreferrer">github.com/renfie/fielanzen-android-offline</a>. Dieser Link benötigt Internet; der vollständige GPL-Text oben nicht.</p>
+    <div class="modal-actions"><button type="button" class="btn primary close-license">Schließen</button></div></div>`;
+  document.body.appendChild(dlg);
+  dlg.querySelectorAll('.close-license').forEach(b=>b.addEventListener('click',()=>dlg.close()));
+  dlg.addEventListener('close',()=>dlg.remove());
+  dlg.showModal();
+}
+
 function settingsHtml(): string {
   const accountChoice=state.settings.defaultAccountId;
   const balances=calculateBalances(state,today());
@@ -853,6 +888,7 @@ function settingsHtml(): string {
       <div id="payee-results">${payeeResultsHtml()}</div></div></section>
     ${bookingListSettingsHtml(readBookingList())}
     ${appLockSettingsHtml()}
+    ${licenseSettingsHtml()}
     <section class="card"><div class="section-title"><h2>Darstellung</h2></div>
       <label class="field">Farbschema<select id="preferred-theme">
         <option value="system" ${state.settings.theme==='system'?'selected':''}>Systemeinstellung (automatisch)</option>
@@ -1216,7 +1252,7 @@ function render(): void {
       <span><strong>${serverMode?'AKTIV: DASHBOARD-SERVER':'AKTIV: LOKAL'}</strong><small>${serverMode?` · ${esc(remote.server)} · Buchungen nur auf dem Server`:' · Buchungen nur auf diesem Gerät'}</small></span>
       ${serverMode?'<button type="button" class="btn secondary" data-action="server-switch-local">Zu Lokal wechseln</button>':''}
     </div>
-    <main class="wrap" id="content" tabindex="-1">${message?`<div class="error" role="alert">${esc(message)}</div>`:''}${serverMode?(view==='settings'?serverSettingsHtml(remote)+appLockSettingsHtml():serverPageHtml(remote,view==='bookings'?'bookings':view==='reports'?'reports':view==='recurring'?'recurring':'home')):(view==='home'?homeHtml():view==='bookings'?bookingsViewHtml():view==='recurring'?recurringHtml():view==='reports'?reportsHtml():view==='import-audits'?importAuditsHtml():view==='data-check'?dataCheckHtml():settingsHtml())}</main>
+    <main class="wrap" id="content" tabindex="-1">${message?`<div class="error" role="alert">${esc(message)}</div>`:''}${serverMode?(view==='settings'?serverSettingsHtml(remote)+appLockSettingsHtml()+licenseSettingsHtml():serverPageHtml(remote,view==='bookings'?'bookings':view==='reports'?'reports':view==='recurring'?'recurring':'home')):(view==='home'?homeHtml():view==='bookings'?bookingsViewHtml():view==='recurring'?recurringHtml():view==='reports'?reportsHtml():view==='import-audits'?importAuditsHtml():view==='data-check'?dataCheckHtml():settingsHtml())}</main>
     <nav class="nav" aria-label="Hauptnavigation"><button data-action="go-home" class="${view==='home'?'active':''}"><span class="nav-icon">⌂</span>Übersicht</button><button data-action="go-bookings" class="${view==='bookings'?'active':''}"><span class="nav-icon">▤</span>Buchungen</button><button data-action="go-recurring" class="${view==='recurring'?'active':''}"><span class="nav-icon">↻</span>Regeln</button><button data-action="go-reports" class="${view==='reports'?'active':''}"><span class="nav-icon">▥</span>Monat</button><button data-action="go-settings" class="${view==='settings'||view==='import-audits'||view==='data-check'?'active':''}"><span class="nav-icon">⚙</span>Mehr</button></nav>`;
   const logo = document.querySelector<HTMLImageElement>('.wolf-logo');
   if (logo) {
@@ -1423,6 +1459,7 @@ function bookingDialog(b?: Booking, clone = false): void {
 }
 async function click(action: string, id?: number): Promise<void> {
   if(!appUnlocked){if(action==='app-unlock')await unlockApp();return;}
+  if(action==='app-license'){showLicenseDialog();return;}
   if(action==='app-lock-enable'||action==='app-lock-disable'){await toggleAppLock(action==='app-lock-enable');return;}
   if(action==='app-lock-now'){lockScreen();return;}
   message='';

@@ -4,7 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PROJECT_DIR="$PWD"
-VERSION="0.1.0-alpha.28"
+VERSION="$(python3 -c 'import json;print(json.load(open("package.json"))["version"])')"
 SDK_CLI="commandlinetools-linux-15859902_latest.zip"
 SDK_CLI_SHA256="4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583"
 NODE_VERSION="22.21.1"

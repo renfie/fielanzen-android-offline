@@ -38,7 +38,7 @@ test('Android safe area is native-detected and supports PWA env fallback',()=>{
 test('financisto export and original package identification unchanged',()=>{
   assert.equal((main.match(/exportFinancistoCompatible\(state\)/g)||[]).length,4);
   assert.equal(source('capacitor.config.ts').includes("appId: 'de.fielanzen.offline'"),true);
-  assert.match(source('package.json'),/0\.1\.0-alpha\.28/);
+  assert.match(source('package.json'),/0\.1\.0-alpha\.\d+/);
 });
 test('server search recognizes categories, payees, amounts and excludes unrelated rows',async()=>{
   const m=await import('../preview/server-ui.js');

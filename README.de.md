@@ -8,7 +8,7 @@
 
 <p align="center"><strong>Eigenständige Android-Finanzverwaltung – zuerst lokal, optional mit Dashboard-Verbindung.</strong></p>
 
-**Aktueller Quellstand:** `0.1.0-alpha.28` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
+**Aktueller Quellstand:** `0.1.0-alpha.29` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 
@@ -37,7 +37,7 @@ Benötigt werden Node.js 22+, Java 21 und ein Android SDK. Das VM-Skript kann fe
 bash scripts/build-android-vm.sh
 ```
 
-Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.28-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
+Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.29-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
 
 **Vor jedem Update:** Vollständige JSON-Sicherung außerhalb der App erstellen. Zur Aktualisierung müssen **Paketkennung und Signaturschlüssel identisch** sein. Nicht deinstallieren und keine App-Daten löschen, um einen Signaturfehler zu umgehen. Siehe [VM-Anleitung](ANLEITUNG-ANDROID-DEBIAN.txt) und [Installationsanleitung](docs/INSTALLATION.de.md).
 
@@ -73,3 +73,9 @@ Die gezielten Quellcodeprüfungen ersetzen weder den vollständigen Android-Buil
 Keine echten Finanzdaten, `.backup`-Dateien, Datenbanken, API-Schlüssel, Client-Zertifikate, Signaturschlüssel, ausgefüllte `.env`-Dateien oder identifizierende Bildschirmfotos veröffentlichen. JSON- und Financisto-Sicherungen sind **nicht automatisch verschlüsselt**, auch wenn die App-Sperre aktiv ist. Beispiel-URLs verwenden `example.org`.
 
 Eigene Projektbestandteile stehen unter [GPL-2.0-only](LICENSE); Hinweise zu Dritten in [NOTICE.md](NOTICE.md). Dieses Projekt ist **keine** offizielle Financisto-Version oder -Fortsetzung. Verfügbarer Quellcode bedeutet nicht, dass eine fertige APK vollständig auf Android getestet ist.
+
+## Automatische APKs und signierte GitHub-Releases
+
+Jeder Push auf `main` startet einen Android-Debug-Build (Actions-Artefakt mit temporärem Debug-Signaturschlüssel). Ein zur Projektversion passendes Git-Tag erstellt nach Einrichtung der vier GitHub-Secrets eine **signierte Vorabversion**. Siehe [Anleitung auf Deutsch](docs/RELEASES.de.md) oder [English](docs/RELEASES.en.md). Debug-Artefakte aus CI sind nicht als dauerhaft updatefähige Releases geeignet.
+
+**Lizenz in der App:** Unter **Mehr → Lizenz & Open Source** werden in lokalem und Servermodus eine Übersicht zu GPLv2-Rechten und -Pflichten, der vollständige Lizenztext (offline) und die Projekt-/Fremdsoftwarehinweise angezeigt.

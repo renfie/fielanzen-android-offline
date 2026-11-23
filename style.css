@@ -355,3 +355,11 @@ dialog[open]{margin-top:max(12px,var(--ui-safe-top));margin-bottom:max(12px,var(
 .app-locked{padding-top:calc(24px + var(--ui-safe-top));padding-bottom:calc(24px + var(--ui-safe-bottom));}
 .server-search-count{margin:8px 0 12px;}
 @media print{.top{padding-top:0}.nav{padding-bottom:0}}
+
+/* Alpha 29: GPLv2 license visible offline in both data modes. */
+dialog.license-modal{width:min(720px,calc(100vw - 20px));max-height:calc(100dvh - 30px);overflow:auto;}
+.license-body{line-height:1.5;overflow-wrap:anywhere;}
+.license-body ul{padding-left:22px;margin:8px 0 18px;}
+.license-body li{margin-bottom:6px;}
+.license-body h3{font-size:1rem;margin:18px 0 8px;}
+.license-body pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.75rem;line-height:1.45;max-height:45dvh;overflow:auto;padding:12px;background:#f4f5f5;color:#283239;border-radius:8px;}
