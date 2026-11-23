@@ -18,6 +18,10 @@ test('release workflow requires private signing secrets, verifies and publishes 
   for(const secret of ['ANDROID_KEYSTORE_BASE64','ANDROID_KEYSTORE_PASSWORD','ANDROID_KEY_ALIAS','ANDROID_KEY_PASSWORD']) assert.match(s,new RegExp(secret));
   assert.match(s,/apksigner.*verify/);
   assert.match(s,/gh release create/);
+  assert.match(s,/publish_signed_release/);
+  assert.match(s,/github.event_name == 'workflow_dispatch'/);
+  assert.match(s,/release_tag=/);
+  assert.match(s,/main branch only/);
   assert.match(s,/if-no-files-found: error/);
   assert.match(s,/build-tools;36\.0\.0/);
 });
