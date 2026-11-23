@@ -29,17 +29,17 @@ jobs:
       release_requested: ${{ steps.release_version.outputs.release_requested }}
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
       - name: Install Android platform
@@ -114,7 +114,7 @@ jobs:
           mkdir -p release
           cp android/app/build/outputs/apk/debug/app-debug.apk "release/FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk"
           (cd release && sha256sum "FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk" > "FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk.sha256")
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ steps.release_version.outputs.release_requested != 'true' }}
         with:
           name: fielanzen-debug-${{ github.sha }}
@@ -152,7 +152,7 @@ jobs:
             --out "$DEST" "$ALIGNED"
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$DEST"
           (cd release && sha256sum "FieLanzen-Offline-${VERSION}-release.apk" > "FieLanzen-Offline-${VERSION}-release.apk.sha256")
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ steps.release_version.outputs.release_requested == 'true' }}
         with:
           name: fielanzen-signed-${{ steps.release_version.outputs.release_tag }}
@@ -167,7 +167,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: fielanzen-signed-${{ needs.build-apk.outputs.release_tag }}
           path: release
