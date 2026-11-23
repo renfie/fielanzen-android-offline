@@ -20,9 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release_tag: ${{ steps.release_version.outputs.release_tag }}
+      release_requested: ${{ steps.release_version.outputs.release_requested }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -55,6 +58,34 @@ jobs:
             echo 'Manual signed releases must run on main.' >&2
             exit 1
           fi
+          REQUESTED=false
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            REQUESTED=true
+          elif [[ "$MANUAL_RELEASE" == true ]]; then
+            REQUESTED=true
+          elif [[ "$GITHUB_EVENT_NAME" == push && "$GITHUB_REF" == 'refs/heads/main' ]]; then
+            # A normal source change is debug-only. Publish automatically only when
+            # package.json's VERSION actually increases on main, in this commit.
+            PREVIOUS_VERSION="$(git show HEAD^:package.json | node -e 'let s="";process.stdin.on("data",c=>s+=c);process.stdin.on("end",()=>process.stdout.write(JSON.parse(s).version));')"
+            if [[ "$PREVIOUS_VERSION" != "$VERSION" ]]; then
+              if [[ "$PREVIOUS_VERSION" =~ ^0\.1\.0-alpha\.([0-9]+)$ && "$VERSION" =~ ^0\.1\.0-alpha\.([0-9]+)$ ]]; then
+                PREVIOUS_NUMBER="${PREVIOUS_VERSION##*.}"
+                NEW_NUMBER="${VERSION##*.}"
+                if (( 10#$NEW_NUMBER <= 10#$PREVIOUS_NUMBER )); then
+                  echo 'Release version must increase monotonically.' >&2
+                  exit 1
+                fi
+                REQUESTED=true
+                echo "New version $VERSION (was $PREVIOUS_VERSION): signed release requested."
+              else
+                echo 'Unsupported version change.' >&2
+                exit 1
+              fi
+            fi
+          fi
+          echo "release_requested=$REQUESTED" >> "$GITHUB_OUTPUT"
+          echo "Release requested: $REQUESTED"
+
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: TypeScript and web bundle
@@ -69,7 +100,7 @@ jobs:
           npx --no-install cap sync android
           python3 scripts/configure-android.py
       - name: Debug APK – test only (non-tagged builds)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
+        if: ${{ steps.release_version.outputs.release_requested != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -78,14 +109,14 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk "release/FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk"
           (cd release && sha256sum "FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk" > "FieLanzen-Offline-${VERSION}-debug-UNSTABLE-KEY.apk.sha256")
       - uses: actions/upload-artifact@v4
-        if: ${{ !startsWith(github.ref, 'refs/tags/') && !(github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
+        if: ${{ steps.release_version.outputs.release_requested != 'true' }}
         with:
           name: fielanzen-debug-${{ github.sha }}
           path: release/*
           retention-days: 14
           if-no-files-found: error
-      - name: Sign release APK (tag or manual release; user-owned key)
-        if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') || (github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
+      - name: Sign release APK (version bump, tag, or manual release)
+        if: ${{ steps.release_version.outputs.release_requested == 'true' }}
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -116,7 +147,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$DEST"
           (cd release && sha256sum "FieLanzen-Offline-${VERSION}-release.apk" > "FieLanzen-Offline-${VERSION}-release.apk.sha256")
       - uses: actions/upload-artifact@v4
-        if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') || (github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
+        if: ${{ steps.release_version.outputs.release_requested == 'true' }}
         with:
           name: fielanzen-signed-${{ steps.release_version.outputs.release_tag }}
           path: release/*
@@ -124,7 +155,7 @@ jobs:
           if-no-files-found: error
 
   publish-release:
-    if: ${{ startsWith(github.ref, 'refs/tags/v0.1.0-alpha.') || (github.event_name == 'workflow_dispatch' && inputs.publish_signed_release) }}
+    if: ${{ needs.build-apk.outputs.release_requested == 'true' }}
     needs: build-apk
     runs-on: ubuntu-latest
     permissions:
