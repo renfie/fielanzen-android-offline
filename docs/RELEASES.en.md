@@ -29,16 +29,22 @@ Provide the requested passwords interactively. Under **Repository Settings → S
 | `ANDROID_KEY_ALIAS` | `fielanzen` |
 | `ANDROID_KEY_PASSWORD` | Private-key password (often the same as the keystore password for PKCS12) |
 
-To publish the first release after configuring secrets and checking the source, run in a clean checkout:
+## Publish a signed release from GitHub Actions – without local Git authentication
 
-```bash
-git clone https://github.com/renfie/fielanzen-android-offline.git
-cd fielanzen-android-offline
-git tag -a v0.1.0-alpha.29 -m 'FieLanzen Offline Alpha 29'
-git push origin v0.1.0-alpha.29
-```
+The four signing secrets are configured once. **No Personal Access Token or Linux VM is required for subsequent releases.**
 
-See **Actions** and then **Releases**. For later versions, update `package.json`, `src/main.ts` and use the matching tag. The workflow rejects mismatched tags.
+1. Open [**Actions → Android APK – build and signed prerelease**](https://github.com/renfie/fielanzen-android-offline/actions/workflows/android-apk.yml).
+2. Click **Run workflow**.
+3. Select **main** under **Use workflow from**.
+4. Enable **Publish signed prerelease for package.json version (main branch only)**.
+5. Click **Run workflow**.
+6. Monitor the build and signing verification in Actions. On success, GitHub creates the matching version tag and publishes the signed APK with its SHA256 checksum under [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
+
+**Unchecked** means a debug-test APK only. Do **not** separately click GitHub's **Draft a new release** button: the workflow publishes the tag and prerelease itself and prevents duplicate version releases.
+
+For later versions, update the version consistently in `package.json`, app source and tests first. The release builds from `main`, not a local checkout.
+
+Pushing a matching `v0.1.0-alpha.N` tag remains an optional alternative if Git authentication is available.
 
 ## Existing installs
 
