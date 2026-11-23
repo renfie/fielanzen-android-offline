@@ -1,0 +1,26 @@
+name: Quellcode-Prüfung (Android)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  source-checks:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Abhängigkeiten installieren
+        run: npm install --no-audit --no-fund
+      - name: Web-App und TypeScript prüfen
+        run: npm run build
+      - name: Testvorschau erzeugen
+        run: npx tsc -p tsconfig.preview.json
+      - name: Aktuelle gezielte Regressionstests
+        run: node --test tests/alpha26-full-backup.test.mjs tests/alpha27-display-lock.test.mjs tests/alpha28-home-search-safearea.test.mjs

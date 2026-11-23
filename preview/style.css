@@ -1,0 +1,357 @@
+:root{color-scheme:light;font-family:Arial,Helvetica,system-ui,sans-serif;color:#27313a;background:#f6f7f7;font-size:15px}
+*{box-sizing:border-box}body{margin:0;min-height:100vh}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}a{color:inherit}h1,h2,h3,p{margin-top:0}h1{font-size:1.65rem;letter-spacing:-.035em;margin:8px 0}h2{font-size:1.08rem;margin:0}p{line-height:1.45}
+:focus-visible{outline:2px solid #b49a50;outline-offset:3px}.top{display:flex;align-items:center;gap:11px;background:white;border-bottom:1px solid #e1e4e6;padding:12px max(16px,env(safe-area-inset-left));position:sticky;top:0;z-index:3}.logo{width:42px;height:42px;border-radius:11px;background:#27313a;color:#b49a50;display:grid;place-items:center;font-weight:800;font-size:1.8rem}.brand{font-weight:800;font-size:1.14rem}.subbrand{color:#758087;font-size:.73rem;margin-top:3px}.top-pill{margin-left:auto;background:#f1f4f2;border-radius:50px;color:#406a5d;padding:7px 9px;font-size:.73rem;font-weight:700}.wrap{width:min(900px,calc(100% - 28px));margin:23px auto 110px}.intro{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:.69rem;font-weight:800;color:#998043}.muted{color:#657078}.small{font-size:.83rem}.card{border:1px solid #e2e5e7;border-radius:14px;background:white;box-shadow:0 7px 24px #23303607;padding:18px;margin-bottom:14px}.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:13px}.section-title .muted{font-size:.8rem}.balance-total{font-size:2.25rem;font-weight:750;letter-spacing:-.06em;font-variant-numeric:tabular-nums;margin:7px 0 2px}.accounts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.account{padding:13px;background:#f7f8f8;border-radius:10px;border:1px solid #eaeded}.account-name{font-size:.82rem;color:#657078;overflow-wrap:anywhere}.account-value{font-size:1.16rem;font-weight:760;letter-spacing:-.03em;margin-top:8px;font-variant-numeric:tabular-nums}.btn{display:inline-flex;justify-content:center;align-items:center;gap:5px;border:1px solid #dce0e2;background:#f2f3f3;color:#27313a;border-radius:9px;min-height:41px;padding:10px 14px;font-weight:700;font-size:.86rem;text-decoration:none}.btn.primary{background:#34404a;border-color:#34404a;color:white}.btn.text{background:transparent;border-color:transparent;color:#75602e;padding:6px 8px;min-height:34px}.btn.danger{color:#a13d37;background:#fff6f6;border-color:#efd0cb}.btn.full{width:100%}.btn-row{display:flex;flex-wrap:wrap;gap:8px}.booking{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;border:0;border-top:1px solid #eef0f0;background:transparent;padding:12px 1px}.booking:hover{background:#fafafa}.booking .info{min-width:0;flex:1}.booking-title{font-weight:750;font-size:.95rem;overflow-wrap:anywhere}.booking-meta{color:#7b8388;font-size:.78rem;margin-top:5px}.booking-amount{font-weight:780;white-space:nowrap;font-variant-numeric:tabular-nums;font-size:1rem}.expense{color:#b34b46}.income{color:#137a65}.transfer{color:#445d77}.empty{padding:27px 4px;text-align:center;color:#78838a;font-size:.9rem}.nav{position:fixed;z-index:4;bottom:0;left:0;right:0;background:white;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid #e1e4e6;padding:7px max(8px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));box-shadow:0 -5px 20px #27313a0d}.nav button{border:0;background:transparent;min-height:52px;border-radius:9px;color:#56616a;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;font-size:.73rem;font-weight:700}.nav button.active{background:#f5f4ed;color:#27313a;box-shadow:inset 0 3px #b49a50}.nav-icon{font-size:1.25rem}.notice{background:#fffaee;border:1px solid #e8dcb8;border-radius:10px;padding:13px 15px;font-size:.83rem;color:#65552c;line-height:1.55}.settings-line{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;border-bottom:1px solid #eee;padding:9px 0}.settings-line:last-child{border-bottom:0}.settings-line strong{font-size:.87rem;overflow-wrap:anywhere}.settings-line span{font-size:.78rem;color:#657078}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stats>div{padding:12px;background:#f7f8f8;border-radius:9px}.stats strong{font-size:1.1rem;font-variant-numeric:tabular-nums}.stats span{display:block;color:#6e797f;font-size:.78rem;margin-top:7px}
+dialog{width:min(480px,calc(100vw - 18px));max-height:calc(100dvh - 25px);overflow-y:auto;border:1px solid #dfe3e4;border-radius:16px;padding:0;box-shadow:0 25px 60px #1f2a3077;color:#27313a}dialog::backdrop{background:#1821289c}.modal-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e4e7e8;padding:18px 19px}.modal-head h2{font-size:1.17rem}.modal-body{padding:16px 19px 20px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:6px;margin-bottom:13px;font-size:.85rem;font-weight:700;color:#536169}.field>input,.field>select,.field>textarea{width:100%;background:#fff;color:#27313a;padding:11px;border:1px solid #cfd5d8;border-radius:9px;font-weight:400;font-size:16px;min-width:0}.field textarea{resize:vertical;min-height:65px}.form-grid>.field{min-width:0}.modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}.error{color:#a33834;background:#fff1f0;border:1px solid #f2d2cf;padding:10px 12px;border-radius:9px;margin-bottom:12px;font-size:.84rem}.hide{display:none!important}.loading{text-align:center;margin:100px auto;color:#66717b}.no-wrap{white-space:nowrap}.divider{border:0;border-top:1px solid #e3e5e6;margin:20px 0}.select-filter{width:auto;min-width:120px;border:1px solid #d7dddf;border-radius:8px;padding:9px;background:#fff;color:#27313a;font-size:.85rem}.warning{color:#a33e35}.inline-info{display:flex;align-items:center;gap:7px;color:#657078;font-size:.8rem}
+@media(max-width:450px){.wrap{width:calc(100% - 20px);margin-top:16px}.card{padding:14px}.accounts{grid-template-columns:repeat(2,minmax(0,1fr))}.account-value{font-size:1rem}.intro h1{font-size:1.45rem}.balance-total{font-size:1.9rem}.top-pill{font-size:.67rem}.form-grid{grid-template-columns:1fr 1fr}}
+
+/* 0.1.0-alpha.2 — Compact booking cards, expandable details and filtering. */
+.logo{overflow:hidden;flex:none;position:relative}
+.logo:has(.wolf-logo:not([hidden])){background:transparent}
+.wolf-logo{width:100%;height:100%;object-fit:contain;position:absolute;inset:0;background:#fff}
+.logo:has(.wolf-logo:not([hidden])) .logo-fallback{visibility:hidden}
+.booking-entry{border-top:1px solid #eef0f0}
+.booking-entry:first-child{border-top:0}
+.booking-entry.is-expanded{background:#fcfcfa;border-radius:10px}
+.booking-entry .booking{border-top:0;padding:12px 8px;min-height:62px}
+.booking-side{display:flex;align-items:center;gap:12px;min-width:max-content}
+.booking-chevron{display:inline-block;font-size:1.15rem;color:#859098;min-width:13px;text-align:center}
+.booking-details{border-top:1px solid #edf0f0;margin:0 8px;padding:12px 3px 14px}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px;margin:0 0 15px}
+.detail-grid>div{min-width:0}
+.detail-grid dt{font-size:.74rem;color:#7b868a;margin-bottom:4px}
+.detail-grid dd{font-size:.87rem;font-weight:650;overflow-wrap:anywhere;margin:0}
+.detail-grid .booking-detail-note{grid-column:1/-1}
+.booking-actions{justify-content:flex-end}
+.booking-actions .btn{min-height:39px;padding:8px 12px}
+.book-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 15px;padding:12px;background:#f8f9f9;border:1px solid #eef0f0;border-radius:11px}
+.book-filters .field:first-child{grid-column:1/-1}
+.book-filters .field{min-width:0}
+.book-filters input,.book-filters select{width:100%}
+.bookings-more{text-align:center;padding:18px 8px 6px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.bookings-more>span{color:#758087;font-size:.78rem}
+@media(max-width:660px){.book-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.book-filters .field:first-child{grid-column:1/-1}.book-filters .field:last-child{grid-column:1/-1}.booking-title{font-size:.91rem}.booking-meta{font-size:.73rem}.booking-side{gap:6px}.booking-amount{font-size:.94rem}}
+@media(max-width:370px){.detail-grid{grid-template-columns:1fr}.booking-actions{justify-content:stretch}.booking-actions .btn{flex:1 1 auto}}
+
+.payee-picker{position:relative}
+.payee-picker input{width:100%}
+.payee-menu{position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:12;background:#fff;border:1px solid #dce0e2;box-shadow:0 10px 30px #27313a21;border-radius:8px;overflow-y:auto;max-height:260px}
+.payee-menu[hidden]{display:none}
+.payee-suggestion{display:block;padding:11px 12px;width:100%;border:0;border-bottom:1px solid #edf0f0;background:#fff;color:#27313a;text-align:left;font-weight:600}
+.payee-suggestion:hover,.payee-suggestion:focus-visible{background:#f5f4ed}
+.payee-suggestion:last-child{border-bottom:0}
+/* 0.1.0-alpha.3 - persistent management and safe backup UI. */
+.setting-details{display:flex;min-width:0;flex-direction:column;gap:5px;overflow-wrap:anywhere}
+.settings-line .setting-details span{font-size:.78rem;color:#6e797f}
+.settings-line .settings-edit{flex:none;min-height:36px;padding:8px 10px;font-size:.79rem}
+.restore-summary{background:#fff8eb;border:1px solid #eedeb8;border-radius:11px;padding:12px 14px;margin-bottom:15px;font-size:.83rem;line-height:1.45}
+.restore-summary p{margin:0 0 10px}
+.restore-summary p:last-child{margin:0}
+@media(max-width:400px){.settings-line{gap:7px}.settings-line .settings-edit{padding:7px;font-size:.74rem}}
+/* 0.1.0-alpha.4 – recurring rules, two-month reports, five-tab bottom navigation. */
+.nav{grid-template-columns:repeat(5,minmax(0,1fr));gap:2px}
+.nav button{font-size:.69rem;min-width:0}
+.report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.report-month{min-width:0;border:1px solid #e5e8e8;border-radius:12px;padding:15px}
+.report-month h2{padding-bottom:11px;border-bottom:2px solid #b49a50}
+.report-month h3{font-size:.86rem;margin:20px 0 8px}
+.report-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+.report-metrics>div{background:#f6f8f8;padding:10px;border-radius:9px;min-width:0}
+.report-metrics span{display:block;color:#67777c;font-size:.75rem;margin-bottom:6px}
+.report-metrics strong{font-size:1.08rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.report-metrics .report-net{grid-column:1/-1}
+.report-line{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #e7ebeb;padding:8px 0;font-size:.81rem}
+.report-line span{overflow-wrap:anywhere}
+.report-line strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.checkline{display:flex;align-items:center;gap:10px;margin:8px 0 14px;font-size:.85rem;font-weight:650}
+.checkline input{width:18px;height:18px;accent-color:#34404a}
+@media(max-width:680px){.report-grid{grid-template-columns:1fr}}
+@media(max-width:385px){.nav button{font-size:.62rem}.nav-icon{font-size:1.12rem}}
+@media print{
+ @page{size:A5 portrait;margin:9mm}
+ .no-print,.top,.nav{display:none!important}
+ body{background:#fff!important}
+ .wrap{width:100%;margin:0!important}
+ .card{box-shadow:none;border:0;padding:0;margin:0}
+ .report-grid{grid-template-columns:1fr;gap:8mm}
+ .report-month{break-inside:avoid;border:1px solid #bbb}
+ .intro{margin-bottom:5mm}
+}
+
+/* alpha.4 hotfix 2: always expose document scrollbar, without affecting the fixed bottom navigation. */
+html { overflow-y:scroll; scrollbar-gutter:stable; }
+body { overflow-x:hidden; overflow-y:visible; min-height:100vh; }
+@media (pointer:fine) {
+ html::-webkit-scrollbar { width:12px; }
+ html::-webkit-scrollbar-track { background:#e9eded; }
+ html::-webkit-scrollbar-thumb { background:#879198; border-radius:8px; border:2px solid #e9eded; }
+ html::-webkit-scrollbar-thumb:hover { background:#67727a; }
+}
+
+/* Alpha 5: audit table and responsive monthly share bars */
+.audit-list{margin:12px 0;padding:10px;border:1px solid #e2d7bc;border-radius:9px;background:#fffcf5}
+.audit-list summary{cursor:pointer;line-height:1.5}
+.audit-rows{margin:10px 0 5px}
+.audit-rows>div{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #ebe3d2;padding:7px 0;font-size:.8rem}
+.audit-rows>div>span:last-child{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.report-category{padding:2px 0 7px}.report-category .report-line{border:0;padding-bottom:5px}
+.report-meter{height:5px;border-radius:3px;background:#f1f0e8;overflow:hidden}.report-meter>span{display:block;height:100%;background:#b49a50;border-radius:3px}
+@media(max-width:380px){.audit-rows>div{flex-direction:column;gap:3px}.audit-rows>div>span:last-child{text-align:left}}
+
+/* Alpha 6 – accessible, paginated local import audit */
+.audit-meta{display:flex;flex-direction:column;gap:5px;margin:16px 0;color:#35414a;font-size:.84rem}
+.audit-meta>span{font-size:.77rem;color:#77828a;overflow-wrap:anywhere}
+.audit-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0 17px}
+.audit-stats>div{min-width:0;background:#f5f6f6;border:1px solid #e9ebeb;border-radius:9px;padding:12px 9px}
+.audit-stats strong{display:block;font-size:1.2rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.audit-stats span{display:block;color:#6b767e;font-size:.69rem;margin-top:6px;line-height:1.3}
+.audit-gap-list{margin:16px 0}
+.audit-gap-list>.audit-gap{border-bottom:1px solid #e7e9eb;margin:0}
+.audit-gap>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 6px;cursor:pointer;list-style:none}
+.audit-gap>summary::-webkit-details-marker{display:none}
+.audit-gap>summary::before{content:'›';color:#b49a50;font-weight:800;font-size:1.15rem;transition:transform .12s}
+.audit-gap[open]>summary::before{transform:rotate(90deg)}
+.audit-gap>summary>strong{margin-right:auto;white-space:nowrap}
+.audit-gap>summary>span{font-size:.79rem;text-align:right;color:#637078;font-variant-numeric:tabular-nums}
+.audit-gap-detail{padding:5px 15px 15px;color:#53626b;font-size:.79rem;line-height:1.6;overflow-wrap:anywhere;max-height:230px;overflow:auto}
+.audit-gap-detail p{margin:8px 0 0}
+.audit-rows .audit-gap{font-size:inherit}
+@media(max-width:700px){.audit-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.audit-gap>summary{gap:6px}.audit-gap>summary>span{font-size:.72rem}}
+
+/* Alpha 8: app-controlled light/dark appearance (system follows prefers-color-scheme). */
+html[data-theme="dark"] {color-scheme:dark;color:#e8eef1;background:#192129;}
+html[data-theme="dark"] body{background:#192129;color:#e8eef1;}
+html[data-theme="dark"] h1,html[data-theme="dark"] h2,html[data-theme="dark"] h3,
+html[data-theme="dark"] .brand,html[data-theme="dark"] .setting-details strong{color:#eef2f4;}
+html[data-theme="dark"] .top,html[data-theme="dark"] .nav,html[data-theme="dark"] .card,
+html[data-theme="dark"] dialog,html[data-theme="dark"] .payee-menu{background:#242e37;color:#e8eef1;border-color:#394650;}
+html[data-theme="dark"] .subbrand,html[data-theme="dark"] .muted,html[data-theme="dark"] .account-name,
+html[data-theme="dark"] .booking-meta,html[data-theme="dark"] .booking-chevron,
+html[data-theme="dark"] .settings-line span,html[data-theme="dark"] .setting-details span,
+html[data-theme="dark"] .stats span,html[data-theme="dark"] .report-metrics span,
+html[data-theme="dark"] .audit-stats span,html[data-theme="dark"] .audit-meta>span,
+html[data-theme="dark"] .audit-gap>summary>span,html[data-theme="dark"] .audit-gap-detail,
+html[data-theme="dark"] .detail-grid dt,html[data-theme="dark"] .field,
+html[data-theme="dark"] .bookings-more>span,html[data-theme="dark"] .empty{color:#b6c1ca;}
+html[data-theme="dark"] .account,html[data-theme="dark"] .stats>div,
+html[data-theme="dark"] .report-metrics>div,html[data-theme="dark"] .audit-stats>div,
+html[data-theme="dark"] .book-filters{background:#2d3944;border-color:#414e58;}
+html[data-theme="dark"] .booking-entry.is-expanded,html[data-theme="dark"] .booking:hover,
+html[data-theme="dark"] .payee-suggestion:hover,html[data-theme="dark"] .payee-suggestion:focus-visible{background:#303d48;}
+html[data-theme="dark"] .btn,html[data-theme="dark"] .select-filter,
+html[data-theme="dark"] .payee-suggestion{background:#34414d;border-color:#52616d;color:#eff3f4;}
+html[data-theme="dark"] .btn.primary{background:#b49a50;border-color:#b49a50;color:#16212a;}
+html[data-theme="dark"] .btn.text{background:transparent;border-color:transparent;color:#dac078;}
+html[data-theme="dark"] .btn.danger{background:#4d2c2f;border-color:#864a4c;color:#ffd0ca;}
+html[data-theme="dark"] .field>input,html[data-theme="dark"] .field>select,html[data-theme="dark"] .field>textarea,
+html[data-theme="dark"] .payee-picker input,html[data-theme="dark"] input,html[data-theme="dark"] textarea,
+html[data-theme="dark"] select{background:#202a34;color:#eef2f4;border-color:#596874;}
+html[data-theme="dark"] .nav button{color:#c1cbd2;}
+html[data-theme="dark"] .nav button.active{background:#3f3e35;color:#fff0ca;}
+html[data-theme="dark"] .booking,html[data-theme="dark"] .booking-entry,
+html[data-theme="dark"] .booking-details,html[data-theme="dark"] .settings-line,
+html[data-theme="dark"] .report-line,html[data-theme="dark"] .report-month,
+html[data-theme="dark"] .modal-head,html[data-theme="dark"] .divider,
+html[data-theme="dark"] .audit-gap-list>.audit-gap,html[data-theme="dark"] .audit-rows>div{border-color:#3a4752;}
+html[data-theme="dark"] .notice,html[data-theme="dark"] .audit-list,
+html[data-theme="dark"] .restore-summary{background:#373126;color:#ead9a4;border-color:#706246;}
+html[data-theme="dark"] .error{background:#4d2b30;color:#ffc8c5;border-color:#8c5353;}
+html[data-theme="dark"] .audit-meta{color:#d5dfe4;}
+html[data-theme="dark"] .report-meter{background:#4b4a3e;}
+html[data-theme="dark"] .expense{color:#ffa39b;}
+html[data-theme="dark"] .income{color:#81dac2;}
+html[data-theme="dark"] .transfer{color:#b0d2fa;}
+html[data-theme="dark"] .wolf-logo{background:transparent;}
+@media (pointer:fine){html[data-theme="dark"]::-webkit-scrollbar-track{background:#202a34;}html[data-theme="dark"]::-webkit-scrollbar-thumb{background:#647887;border-color:#202a34;}}
+@media print{html[data-theme="dark"],html[data-theme="dark"] body{color:#111!important;background:#fff!important}html[data-theme="dark"] .card,html[data-theme="dark"] .report-month{color:#111!important;background:#fff!important}}
+
+/* Alpha 9: everyday finance tools and read-only local data audit. */
+.mini-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0 15px}
+.mini-summary>span{background:var(--summary-bg,#f6f8f8);padding:10px;border-radius:9px;min-width:0}
+.mini-summary small{display:block;color:#65757e;margin-bottom:5px}
+.mini-summary strong{font-size:clamp(.82rem,2vw,1.1rem);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mini-summary .mini-transfer{grid-column:1/-1;font-size:.8rem;color:#62727a;padding:6px 10px}
+.report-toolbar{display:flex;align-items:end;gap:7px;margin-bottom:10px}
+.report-toolbar>.field{flex:1;min-width:0}
+.report-toolbar>.btn{min-width:44px;height:43px;padding:8px}
+.trend-list{display:flex;flex-direction:column;gap:11px}
+.trend-legend{display:flex;gap:15px;font-size:.78rem;margin-bottom:13px}
+.trend-legend>span:before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;background:#137a65;margin-right:5px}
+.trend-legend .trend-expense-mark:before{background:#b34b46}
+.trend-row{display:grid;grid-template-columns:120px minmax(0,1fr) 100px;gap:11px;align-items:center;font-size:.79rem}
+.trend-bars{display:flex;flex-direction:column;gap:3px;min-width:0}
+.trend-bars i{display:block;height:7px;border-radius:4px;min-width:0;max-width:100%}
+.trend-income{background:#137a65}.trend-expense{background:#b34b46}
+.trend-row>strong{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.inventory-issue{border-left:3px solid #b49a50;border-radius:8px;padding:11px;background:#f7f8f8;margin:10px 0}
+.inventory-issue.warning{border-left-color:#b34b46}
+.inventory-issue p{font-size:.8rem;color:#626e74;margin:6px 0 0;line-height:1.4;overflow-wrap:anywhere}
+@media(max-width:640px){.mini-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.mini-summary>span:nth-child(3){grid-column:1/-1}.trend-row{grid-template-columns:82px minmax(0,1fr) 90px;gap:6px;font-size:.72rem}}
+@media(max-width:380px){.trend-row{grid-template-columns:70px minmax(0,1fr) 80px}.mini-summary strong{font-size:.88rem}}
+html[data-theme="dark"] .mini-summary>span,html[data-theme="dark"] .inventory-issue{--summary-bg:#2d3944;background:#2d3944}
+html[data-theme="dark"] .mini-summary small,html[data-theme="dark"] .mini-summary .mini-transfer,html[data-theme="dark"] .inventory-issue p{color:#b8c4cc}
+
+/* Alpha 10: coherent searchable categories and compact master-data administration. */
+.category-picker{position:relative;min-width:0}
+.category-query{width:100%;padding:11px;border:1px solid #cfd5d8;border-radius:9px;background:#fff;color:#27313a;font-size:16px;font-weight:400;min-width:0}
+.category-menu{position:absolute;left:0;right:0;top:calc(100% + 2px);max-height:min(255px,40dvh);overflow-y:auto;overscroll-behavior:contain;z-index:15;background:#fff;border:1px solid #dce0e2;border-radius:9px;box-shadow:0 10px 30px #27313a21}
+.category-menu[hidden],#category-management[hidden],#payee-management[hidden]{display:none!important}
+.category-suggestion{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:44px;width:100%;padding:10px 12px;text-align:left;border:0;border-bottom:1px solid #edf0f0;background:#fff;color:#27313a;font:600 .86rem Arial,Helvetica,sans-serif;cursor:pointer;overflow-wrap:anywhere}
+.category-suggestion:last-child{border-bottom:0}
+.category-suggestion small{font-size:.72rem;color:#748188;font-weight:400;white-space:nowrap}
+.category-suggestion:hover,.category-suggestion:focus-visible{background:#f5f4ed}
+.category-create{color:#8e6f25;border-top:1px solid #e9e1cf}
+.category-create:disabled{opacity:.5}
+.field-help{font-size:.73rem;color:#6f7c83;font-weight:400;line-height:1.4}
+.category-manage-filters{display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:10px;margin-bottom:6px}
+.manage-toggle{display:inline-flex;align-items:center;gap:7px;padding:5px 0;min-height:40px;background:transparent;color:inherit;font:inherit;border:0;text-align:left;cursor:pointer}
+.manage-chevron{font-size:1.2rem;color:#a58a48;display:inline-block;transition:transform .15s}
+.manage-toggle[aria-expanded="true"] .manage-chevron{transform:rotate(180deg)}
+.manage-toggle:focus-visible,.category-query:focus-visible,.category-suggestion:focus-visible{outline:2px solid #b49a50;outline-offset:2px}
+@media(max-width:450px){.category-manage-filters{grid-template-columns:minmax(0,1fr) 112px;gap:7px}.manage-toggle{font-size:.96rem}.category-suggestion small{font-size:.68rem}}
+html[data-theme="dark"] .category-query,html[data-theme="dark"] .category-menu{background:#202a34;color:#eef2f4;border-color:#596874}
+html[data-theme="dark"] .category-suggestion{background:#242e37;color:#eef2f4;border-color:#3a4752}
+html[data-theme="dark"] .category-suggestion small,html[data-theme="dark"] .field-help{color:#bdc7cf}
+html[data-theme="dark"] .category-suggestion:hover,html[data-theme="dark"] .category-suggestion:focus-visible{background:#303d48}
+html[data-theme="dark"] .category-create{color:#ebcf86;border-top-color:#5b513a}
+
+/* Alpha 10: automatic native Android backups. Browser preview shows a read-only explanation. */
+.backup-status{display:flex;flex-direction:column;gap:4px;background:#f4f5f5;border:1px solid #dce1e3;border-radius:9px;padding:11px 13px;margin:10px 0 14px;font-size:.86rem;line-height:1.45;overflow-wrap:anywhere}
+.backup-status span{color:#626d73}
+.auto-backup-check{margin-top:14px;display:block}
+.auto-backup-check>span{display:flex;align-items:center;gap:11px;font-weight:650}
+.auto-backup-check input[type=checkbox]{width:19px;min-width:19px;height:19px;accent-color:#998043;margin:0}
+.auto-backup-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+html[data-theme="dark"] .backup-status{background:#26313a;border-color:#46535e;color:#f0f3f4}
+html[data-theme="dark"] .backup-status span{color:#bac5ce}
+@media(max-width:480px){.auto-backup-options{grid-template-columns:1fr}}
+
+/* Next milestone: compact dashboard-style default-collapsed disclosure panels. */
+.account-disclosure{display:block}
+.disclosure-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;cursor:pointer;min-height:45px;color:inherit}
+.disclosure-toggle::-webkit-details-marker{display:none}
+.disclosure-toggle>span:first-child{display:flex;flex-direction:column;gap:3px;min-width:0}
+.disclosure-toggle strong{font-size:1rem}
+.disclosure-toggle small{color:#657078;font-size:.76rem;font-weight:400;line-height:1.35}
+.disclosure-chevron{font-size:1.3rem;color:#8c7741;transition:transform .15s ease}
+details[open]>.disclosure-toggle .disclosure-chevron{transform:rotate(180deg)}
+.disclosure-toggle:focus-visible{outline:2px solid #b49a50;outline-offset:3px;border-radius:5px}
+.disclosure-body{padding-top:13px;margin-top:12px;border-top:1px solid #e8ebeb}
+.disclosure-tools{margin-bottom:12px}
+.booking-quick-bar{margin-bottom:8px}
+.booking-quick-bar>.field{margin:0}
+.booking-quick-bar input{width:100%;min-height:45px}
+.filter-disclosure{margin-bottom:13px}
+.filter-disclosure>.disclosure-toggle{border:1px solid #e2e5e7;border-radius:10px;padding:10px 12px;background:#f8f9f9}
+.filter-disclosure>.disclosure-body{margin-top:0;border:1px solid #e2e5e7;border-top:0;border-radius:0 0 10px 10px;padding:12px}
+.filter-disclosure[open]>.disclosure-toggle{border-radius:10px 10px 0 0}
+.filter-disclosure .book-filters{margin:0;padding:0;border:0;background:transparent}
+.filter-disclosure .book-filters .field:first-child{grid-column:auto}
+html[data-theme="dark"] .disclosure-toggle small{color:#aab5be}
+html[data-theme="dark"] .disclosure-body{border-color:#414e58}
+html[data-theme="dark"] .filter-disclosure>.disclosure-toggle,html[data-theme="dark"] .filter-disclosure>.disclosure-body{background:#28343f;border-color:#414e58}
+@media(max-width:450px){.disclosure-toggle strong{font-size:.95rem}.disclosure-toggle small{font-size:.72rem}}
+
+/* Alpha 22: one clear primary connection action. */
+#dashboard-connect-button{display:block;width:100%;max-width:440px;margin-top:12px;}
+#dashboard-advanced{margin-top:10px;}
+
+/* Clearly show the ACTIVE data source on every tab. A connection check never switches mode. */
+.mode-banner {display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:9px;padding:11px max(16px,calc((100vw - 970px)/2));border-bottom:2px solid var(--border,#64748b);font-size:0.9rem;}
+.mode-banner strong{font-weight:800;letter-spacing:.035em;}
+.mode-banner small{display:inline;font-size:.82rem;}
+.mode-local{background:rgba(112,128,144,.14);}
+.mode-server{background:rgba(39,139,96,.18);border-bottom-color:#2e9872;}
+.mode-banner .btn{min-height:36px;padding:8px 12px;}
+.connection-preview{margin-top:12px;padding:15px;border:2px solid #2e9872;border-radius:12px;background:rgba(39,139,96,.08);}
+.connection-preview h3{margin:0 0 10px;}
+.connection-preview p{margin:8px 0;}
+@media(max-width:480px){.mode-banner{padding:10px 15px;}.mode-banner small{display:block;}.mode-banner .btn{width:auto;}}
+
+/* Alpha 24: consistent mobile server comboboxes; keyboard-safe bounded suggestion lists */
+dialog .server-search-field .category-menu,dialog .server-search-field .payee-menu{
+  max-height:min(180px,24dvh);overflow-y:auto;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;z-index:30;
+}
+dialog .server-search-field .payee-menu .category-suggestion{min-height:46px;}
+@media(max-width:600px){
+  dialog{max-height:calc(100dvh - 12px)}
+  dialog .modal-body{padding-bottom:24px}
+  dialog .server-search-field .category-menu,dialog .server-search-field .payee-menu{max-height:min(150px,22dvh)}
+}
+
+/* Suggestions open above the on-screen keyboard on narrow Android screens. */
+@media (max-width:600px){
+ dialog .server-search-field .category-menu,dialog .server-search-field .payee-menu{top:auto;bottom:calc(100% + 3px);max-height:min(170px,30dvh)}
+}
+
+/* Shared picker protection, including the existing local booking dialog. */
+@media(max-width:600px){
+ dialog .payee-picker .payee-menu,dialog .category-picker .category-menu{top:auto;bottom:calc(100% + 3px);max-height:min(180px,28dvh)}
+}
+
+/* Alpha 27: same full-width control for remote payee and category. */
+dialog .server-search-field .category-picker,dialog .server-search-field .payee-picker{display:block;position:relative;width:100%;min-width:0}
+dialog .server-search-field .category-picker>input[type="search"],
+dialog .server-search-field .payee-picker>input{
+  display:block;box-sizing:border-box;width:100%;min-width:0;min-height:48px;
+  padding:11px 13px;border:1px solid #cfd5d8;border-radius:9px;
+  font:400 16px/1.3 system-ui,sans-serif;color:#27313a;background:#fff;
+  outline-offset:2px;
+}
+dialog .server-search-field .payee-picker>input:focus-visible,
+dialog .server-search-field .category-picker>input:focus-visible{border-color:#a78d46;outline:2px solid #b49a5088}
+html[data-theme="dark"] dialog .server-search-field input{background:#202a34;color:#eef2f4;border-color:#596874}
+
+/* Collapsed transaction cards: no revisions or action buttons in the summary. */
+.server-transaction{border-top:1px solid #e5e9e9;margin:0;padding:0}
+.server-transaction:last-child{border-bottom:1px solid #e5e9e9}
+.server-transaction-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;list-style:none;padding:12px 1px;cursor:pointer;min-width:0}
+.server-transaction-summary::-webkit-details-marker{display:none}
+.server-transaction-primary{flex:1;min-width:0;display:block}
+.server-transaction-primary>strong{display:block;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.server-transaction-meta{display:block;color:#657078;font-size:.78rem;margin:4px 0 6px;overflow-wrap:anywhere}
+.server-transaction-aside{display:flex;gap:8px;flex:none;align-items:center;font-size:.93rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.server-transaction-aside strong{font-size:.95rem}
+.server-transaction[open] .booking-chevron{transform:rotate(180deg)}
+.server-transaction-details{padding:3px 4px 14px;border-top:1px dashed #e6e9e9;display:grid;gap:10px}
+.server-transaction-details>div:not(.btn-row){display:flex;flex-direction:column;gap:3px}
+.server-transaction-details>div>span{font-size:.75rem;color:#68747b}
+.server-transaction-details>div>strong{font-size:.86rem;overflow-wrap:anywhere}
+.server-transaction-details .revision-value{font-size:.73rem;overflow-wrap:anywhere}
+.booking-type-chip{display:inline-block;vertical-align:middle;font-size:.68rem;font-weight:750;border-radius:6px;padding:2px 6px;margin:2px 5px 0 0;border:1px solid #ced7dc;background:#eef2f4;color:#445d77}
+.booking-type-chip.expense{background:#fff0ee;color:#a33933;border-color:#f0d7d3}
+.booking-type-chip.income{background:#e9f6f1;color:#10735b;border-color:#cae7db}
+.booking-type-chip.transfer{background:#edf2fa;color:#385879;border-color:#d2ddf0}
+.booking-type-chip.recurring{background:#f9f3e6;color:#806021;border-color:#e7d8b6}
+.booking-type-chip.rule-match{background:#f5f2ed;color:#766c54;border-color:#ded6c8}
+.booking-tags{margin-top:3px}
+.server-list-toolbar{display:flex;align-items:end;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:12px 0}
+.server-list-toolbar .field{margin:0;min-width:min(220px,100%);flex:1}
+.server-list-toolbar>span{flex:1;min-width:130px}
+.server-list-toolbar select{min-height:42px}
+html[data-theme="dark"] .server-transaction{border-color:#3e4b54}
+html[data-theme="dark"] .server-transaction-details{border-color:#3e4b54}
+html[data-theme="dark"] .server-transaction-meta{color:#adb9c2}
+html[data-theme="dark"] .booking-type-chip{filter:brightness(.92)}
+
+/* Android native biometric gate; never render finance content behind it. */
+.app-locked{position:fixed;inset:0;display:grid;place-items:center;background:#1e2933;padding:24px;z-index:200;color:#f7f8f9}
+.app-lock-card{width:min(350px,100%);text-align:center}
+.app-lock-card p{color:#d3dce2;line-height:1.45;margin:14px 0 22px}
+.app-lock-mark{margin:auto;background:#b49a50;color:#1d2831;border-radius:18px;display:grid;place-items:center;font-size:2rem;font-weight:900;width:68px;height:68px}
+.app-lock-card .btn{width:100%}
+
+/* Alpha 28: Prevent overlap with Android status bar, cutout and gesture navigation.
+ * Native Android WebView receives status-bar padding from WindowInsetsCompat; browser/PWA
+ * use CSS safe-area-inset-* directly. No fixed hard-coded device status bar height. */
+:root{--ui-safe-top:env(safe-area-inset-top, 0px);--ui-safe-bottom:env(safe-area-inset-bottom, 0px);}
+html.native-android{--ui-safe-top:0px;}
+.top{padding-top:calc(12px + var(--ui-safe-top));padding-left:max(16px,env(safe-area-inset-left, 0px));padding-right:max(16px,env(safe-area-inset-right, 0px));}
+.mode-banner{padding-left:max(12px,env(safe-area-inset-left, 0px));padding-right:max(12px,env(safe-area-inset-right, 0px));}
+.nav{padding-bottom:calc(7px + var(--ui-safe-bottom));}
+dialog{max-height:calc(100dvh - 26px - var(--ui-safe-top) - var(--ui-safe-bottom));}
+dialog[open]{margin-top:max(12px,var(--ui-safe-top));margin-bottom:max(12px,var(--ui-safe-bottom));}
+.app-locked{padding-top:calc(24px + var(--ui-safe-top));padding-bottom:calc(24px + var(--ui-safe-bottom));}
+.server-search-count{margin:8px 0 12px;}
+@media print{.top{padding-top:0}.nav{padding-bottom:0}}

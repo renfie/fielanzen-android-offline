@@ -1,0 +1,20 @@
+FieLanzen Offline 0.1.0-alpha.18 – zusammenhängender Gerätetest (S26)
+
+VORHER: Aus Alpha 16 eine vollständige JSON-Sicherung extern speichern. Ein Update von Alpha 16 direkt auf Alpha 18 ist erlaubt. Nicht deinstallieren.
+
+[ ] 1. Alpha 18 installiert sich über die vorhandene App, Version 0.1.0-alpha.18 erscheint. Alle 12 Konten und bisherigen Buchungen/Salden sind vorhanden.
+[ ] 2. Unter Mehr → Datensicherung kann ich Aktivierung, täglich/wöchentlich/monatlich, eine lokale Uhrzeit und Aufbewahrung auswählen. Es gibt einen eindeutigen Knopf „Sicherungszeitplan speichern“.
+[ ] 3. Automatik bisher AUS → EIN, Zeit z. B. 03:00, speichern: Ein sofortiges .backup erscheint unter Download/FieLanzen und die App bestätigt die Einstellungen.
+[ ] 4. App komplett beenden und wieder öffnen: Aktivierung, Intervall, Uhrzeit, Aufbewahrungswert bleiben gespeichert. „Nächste Zielzeit“ wird angezeigt.
+[ ] 5. Testzeit mindestens 5–10 Minuten in der Zukunft einstellen, speichern. Vorher eine nachvollziehbare TESTbuchung erfassen. Gerät nicht ausschalten. Nach Ablauf des Zeitfensters kontrollieren: neues Backup, „Letzte automatische Sicherung“ und Buchung im Backup. (Android kann das Zeitfenster verzögern.)
+[ ] 6. Nach einem verpassten Termin App öffnen: Ein überfälliger Job wird aus aktuellen Daten nachgeholt; manuelle Backups dürfen den Zeitplan nicht verschieben. Das lässt sich ggf. durch späteren Start überprüfen.
+[ ] 7. Automatik deaktivieren und speichern: Status zeigt deaktiviert. „Jetzt sichern“ funktioniert weiterhin und erstellt eine Datei ohne aktivierten Zeitplan.
+[ ] 8. Wiederherstellungsvorschau zeigt nach Auswahl eines neuen .backup die richtige Konten- und Buchungszahl; produktive Daten dabei NICHT ersetzen.
+[ ] 9. Unter Mehr → Datenquelle bleibt Lokal aktiv. Serveradresse https://dashboard.example.org (oder die eigene HTTPS-Adresse) lässt sich speichern, ohne Finanzdaten zu verändern.
+[ ] 10. „Verbindung prüfen“ meldet bei erreichbarem Dashboard, dass die Mobile-API noch nicht implementiert ist (oder beschreibt den HTTPS/Zugriffsfehler). Kein Login, kein Buchungsversand, keine Serverumschaltung.
+[ ] 11. Der Alpha-17-Financisto-Export ist optional in einer getrennten Testinstallation mit Original-Financisto/Holo zu prüfen; Konten, Buchungen, Salden vergleichen. Nicht in produktives Dashboard zurückspielen.
+
+WICHTIG: Android WorkManager garantiert keine minutengenaue Uhrzeit. Wenn die geplante Ausführung ausbleibt, notieren: Sollzeit, Zeitpunkt des App-Neustarts, „Letzte automatische Sicherung“, „Nächste Zielzeit“ und technische Fehlermeldung. Die App muss zur Prüfung nicht deinstalliert werden.
+
+Sicherheit: Exportierte Downloads .backup sind unverschlüsselt. FieLanzen-eigene Regeln/Einstellungen nur in der vollständigen JSON-Sicherung.
+GitHub unverändert.

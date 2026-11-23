@@ -1,0 +1,58 @@
+FieLanzen Offline 0.1.0-alpha.19 – GEMEINSAMER ANDROID-MEILENSTEINTEST
+==================================================================
+Grundlage: ausschließlich Alpha 18 aus dem Android-Chat.
+Die aus dem Finanzdashboard-Chat stammende Zwischenfassung Alpha 19 wird NICHT verwendet.
+Zuerst von Alpha 18 eine vollständige JSON-Sicherung extern speichern.
+Die neue APK ÜBER Alpha 18 installieren (nicht deinstallieren, nicht Daten löschen).
+
+A. BESTAND UND EXPORT (zuerst abarbeiten!)
+[ ] Version 0.1.0-alpha.19; 12 Konten, 14.959 Buchungen und alle bisherigen lokalen Kontostände erhalten
+[ ] Mehr -> Datensicherung -> Jetzt sichern: neue Datei in Downloads/FieLanzen
+[ ] Neue Datei ist im Android-Dateidialog wieder auswählbar; Vorschau mit korrekten Konten/Buchungen
+[ ] Auf dem Linux-Host aktuelle Datei mit scripts/backup-diagnose.py analysieren:
+    VERSION_CODE=117; VERSION_NAME=1.8.2; DATABASE_VERSION=217;
+    Währung: keine fehlenden Pflichtfelder. Kein altes Archiv mit neuem Dateinamen.
+[ ] NEUE Datei in getrennter/Testinstallation von Financisto/Financisto Holo wiederherstellen
+    -> Konten, Buchungen und Kontostände müssen real sichtbar und korrekt sein.
+    ACHTUNG: Original-Apps haben im Altbestand teils abweichende Gesamtzahlen;
+    diese Unterschiede sind VOR dem Vergleich zu berücksichtigen.
+[ ] Wenn Import zwar Erfolg meldet, aber leer bleibt: Fehler NICHT als behoben markieren;
+    app.backup + funktionierenden Web-Export offline mit Diagnoseskript vergleichen.
+
+B. MOBILE-API – LESEN UND DATENQUELLENWECHSEL
+[ ] Mehr -> Datenquelle: Basisadresse https://finance.example.org (OHNE /api/mobile/v1)
+[ ] 'API prüfen' erkennt GET /healthz und /api/mobile/v1/capabilities
+[ ] Geräte-API-Schlüssel im Dashboard erzeugen (NICHT als Screenshot/Log weitergeben)
+[ ] 'Anmelden und Servermodus aktivieren': POST/PUT/DELETE werden noch NICHT gesendet
+[ ] GET /session: finance_mode, access und can_write angezeigt
+[ ] Vor der Aktivierung gesonderte Bestätigung der Trennung von Server/Offline
+[ ] Serverkonten und Kontostände, Kategorien, Empfänger und 100 Buchungen (paginiert) abrufbar
+[ ] Mehr -> zurück zu Lokal: exakt derselbe lokale Bestand und alle lokalen Salden
+[ ] Gespeicherter Keystore-Schlüssel ermöglicht bewusstes Wiederverbinden nach App-Neustart
+[ ] Kein Schlüssel in FieLanzen-JSON oder Financisto-Backup; Android-Backup der Schlüssel deaktiviert
+
+C. ONLINE-SCHREIBEN – NUR IN TESTUMGEBUNG / MIT TESTKONTO
+[ ] Nur bei finance_mode=web und can_write=true ist Server-CRUD freigegeben
+[ ] Neue Server-Testbuchung -> POST mit Idempotency-Key (UUID); im Dashboard sichtbar
+[ ] Bearbeiten -> PUT mit frischem Idempotency-Key und If-Match=Revision; Dashboard aktualisiert
+[ ] Löschen -> DELETE mit neuem Idempotency-Key und If-Match; Dashboard aktualisiert
+[ ] Eine Test-Umbuchung: Quelle/Ziel saldieren; niemals lokal dupliziert
+[ ] Read-only-Schlüssel / Widerruf / Rechtewechsel: kein Schreibzugriff und keine lokalen Buchungen
+[ ] Versionskonflikt 409/412/428: kein stilles Überschreiben; Serverdaten prüfen
+[ ] Netzwerkausfall nach Sendebeginn: offener Auftrag sichtbar, gleicher Key/Payload bei expliziter Wiederholung
+[ ] Nach erneutem Offline-Wechsel: lokale Regeln/Buchungen weiterhin unverändert
+
+D. AUTOMATISCHE SICHERUNG
+[ ] Uhrzeit + Intervall + Aufbewahrung setzen; 'Speichern' drücken, Neustart prüfen
+[ ] Plan läuft nur im LOCAL-Modus; Serverbuchungen werden nie in lokale Backups gemischt
+[ ] Nach Aktivierung sofortige lokale Sicherung; nächster Termin klar angezeigt
+[ ] Ausführung etwa zur Zielzeit (Android kann verzögern), Status und tatsächliche Datei prüfen
+
+WICHTIGE GRENZEN
+- Die hier erstellte Alpha 19 wurde NICHT nativ als APK gebaut oder auf Galaxy S26 ausgeführt.
+- Die Original-Financisto-/Holo-Wiederherstellung und tatsächliche Dashboard-API-Antworten
+  können erst auf deinen Geräten bestätigt werden.
+- Kein automatisches Offline-zu-Online-Synchronisieren, keine Offline-Warteschlange für
+  Serverbuchungen. Bei unklarer Serverantwort kein zweiter neuer Idempotency-Key.
+- Bei Wechsel der Datenquelle bleiben lokale Buchungen vollständig getrennt.
+- Debug-APK ist kein veröffentlichungsreifer Play-Store-Build.

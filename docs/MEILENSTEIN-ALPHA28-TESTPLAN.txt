@@ -1,0 +1,9 @@
+Alpha 28 – Android-Testplan
+1. Lokal -> Übersicht: 30 Buchungen sichtbar; Weitere laden -> 60; unter Mehr auf 50 oder 100 ändern -> neue Grundmenge gilt auf Übersicht + Buchungen.
+2. Übersicht Suche: Empfänger/Kategorie/Konto/Notiz/Betrag; gesamte lokale Historie. Tastatur bleibt beim Tippen offen.
+3. Buchungen Suche und Filter bleiben intakt; Sortierung auch auf Übersicht.
+4. Dashboard-Server: Übersicht + Buchungen jeweils Suche und Weitere laden; Anzeige weist darauf hin, dass nur geladene API-Seiten durchsucht werden.
+5. Server: Treffer ggf. durch Weitere Serverseiten durchsuchen nachladen; keine Vermischung mit lokaler SQLite.
+6. Galaxy S26: mit Statusleiste und Kameraloch prüfen, dass Top-Header, Dialoge, Banner nicht verdeckt werden (Portrait/Landscape, helle und dunkle Darstellung).
+7. Gestennavigation: untere App-Navigation nicht unter System-Gestenleiste; bei geöffneter Tastatur Eingabe sichtbar.
+8. JSON- und Financisto-Export unverändert. Bestehende App ohne Datenlöschung updaten.

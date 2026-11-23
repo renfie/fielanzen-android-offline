@@ -1,0 +1,61 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+
+test('server cards are closed by default and actions only within details',()=>{
+  const src=read('src/server-ui.ts');
+  assert.ok(src.includes('<details class="server-transaction"'));
+  assert.doesNotMatch(src,/settings-line server-booking/);
+  const detail=src.indexOf('server-transaction-details');
+  assert.ok(detail>=0);
+  assert.ok(src.indexOf('server-edit-booking')>detail);
+  assert.ok(src.indexOf('revision-value')>detail);
+  assert.ok(src.indexOf('server-more-bookings')>detail);
+});
+test('same display settings on local and server with saved 30 50 100 and sort',()=>{
+  const p=read('src/booking-list-preferences.ts'),main=read('src/main.ts'),server=read('src/server-ui.ts');
+  for(const count of [30,50,100])assert.match(p,new RegExp(`value=\\"${count}\\"`));
+  assert.match(p,/localStorage\.setItem\(STORAGE_KEY/);
+  assert.match(main,/bookingListSettingsHtml\(readBookingList\(\)\)/);
+  assert.match(server,/bookingListSettingsHtml\(readBookingList\(\)\)/);
+  assert.match(server,/sortTransactionRows/);
+  assert.match(main,/sortTransactionRows\(state\.bookings/);
+});
+test('matching category and payee field dimensions, mobile bounded popup',()=>{
+  const css=read('style.css');
+  assert.match(css,/server-search-field \.category-picker>input\[type="search"\]/);
+  assert.match(css,/server-search-field \.payee-picker>input/);
+  assert.match(css,/min-height:48px/);
+  assert.match(css,/bottom:calc\(100% \+ 3px\)/);
+});
+test('booking type is always displayed and recurrence only when proven',()=>{
+  const server=read('src/server-ui.ts'),local=read('src/main.ts'),parser=read('src/dashboard-protocol.ts');
+  for(const type of ['Ausgabe','Einnahme','Umbuchung'])assert.match(server,new RegExp(type));
+  assert.match(server,/b\.isRecurring===true/);
+  assert.match(server,/b\.isRuleMatched===true/);
+  assert.match(parser,/raw\.is_recurring/);
+  assert.match(local,/b\.recurringRuleId/);
+  assert.match(read('src/database.ts'),/ALTER TABLE bookings ADD COLUMN recurring_rule_id/);
+  assert.match(read('src/recurring.ts'),/recurringRuleId:rule\.id/);
+});
+test('native Android app lock uses system credential or biometric, stored natively',()=>{
+  const java=read('native/de/fielanzen/offline/FieLanzenAppLockPlugin.java');
+  const config=read('scripts/configure-android.py'),main=read('src/main.ts');
+  assert.match(java,/BiometricPrompt\.PromptInfo/);
+  assert.match(java,/BIOMETRIC_STRONG/);
+  assert.match(java,/DEVICE_CREDENTIAL/);
+  assert.match(java,/FLAG_SECURE/);
+  assert.match(java,/getSharedPreferences\(PREFS/);
+  assert.match(config,/registerPlugin\(FieLanzenAppLockPlugin\.class\)/);
+  assert.match(config,/androidx\.biometric:biometric:1\.1\.0/);
+  assert.match(main,/lockScreen\(\)/);
+  assert.match(main,/appLock\(\)\.getStatus\(\)/);
+  assert.match(main,/if\(appLockEnabled&&!appUnlocked\)\{renderLocked\(\);return;\}/);
+  assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
+});
+test('manual and automatic exports are unchanged and always export recurrence',()=>{
+  const main=read('src/main.ts');
+  assert.equal((main.match(/exportFinancistoCompatible\(state\)/g)||[]).length,4);
+  assert.doesNotMatch(main,/confirmScheduledExport|include-financisto-schedules/);
+});

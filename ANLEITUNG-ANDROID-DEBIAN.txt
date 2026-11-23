@@ -1,0 +1,17 @@
+FieLanzen Offline 0.1.0-alpha.28 – Android-APK auf Debian/Ubuntu x86_64 bauen
+
+1. Auf dem bisherigen Handy zuerst unter "Mehr -> Datensicherung" eine vollständige JSON-Sicherung außerhalb der App erstellen.
+2. Projektarchiv auf derselben Build-VM entpacken (oder dieses Git-Repository klonen).
+3. Im Projektordner ausführen:
+
+    bash scripts/build-android-vm.sh
+
+4. Ergebnis: release/FieLanzen-Offline-0.1.0-alpha.28-debug.apk
+5. APK über die vorhandene App installieren. WICHTIG: Nicht deinstallieren oder App-Daten löschen!
+
+Paketkennung: de.fielanzen.offline
+Android versionCode in scripts/configure-android.py: 27
+
+Ein Update benötigt die gleiche Android-Signatur wie die vorhandene Installation. Bei abweichender Debug-Signatur kann Android die Installation verweigern. Das Build-Skript lädt gegebenenfalls Android SDK und weitere Abhängigkeiten; vor Annahme der SDK-Lizenzen werden diese angezeigt.
+
+Alpha 28: Lokaler und Servermodus, Suche, 30/50/100-Anzeige, kompaktes Buchungslistenlayout, nativer Sperrbildschirm und Safe-Area-Anpassungen. Für die Serverkennzeichnung wiederkehrender Buchungen kann die separat gepflegte Dashboard-API zusätzliche Felder benötigen.

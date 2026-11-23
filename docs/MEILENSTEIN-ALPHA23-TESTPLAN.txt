@@ -1,0 +1,20 @@
+FieLanzen Offline Alpha 23 – gemeinsamer Android-Gerätetest
+
+VORHER: Vollständige JSON-Sicherung aus Alpha 22 extern sichern, APK über bestehende App installieren. Kein Deinstallieren, kein Zurücksetzen.
+
+[ ] 1. App startet; 14.959 Buchungen, 12 Konten, Salden und Regeln unverändert.
+[ ] 2. Nach Start gut sichtbare Leiste "AKTIV: LOKAL" auf allen Seiten.
+[ ] 3. Mehr -> Datenquelle: URL https://finance.example.org; bisheriger API-Schlüssel oder neuer fm1_-Schlüssel; "Verbinden" antippen.
+[ ] 4. Die API meldet eine gültige Verbindung und zeigt eine SERVERVORSCHAU. Die App zeigt noch "AKTIV: LOKAL"; keine automatische Umschaltung, keine lokalen Buchungen hochgeladen.
+[ ] 5. "Servermodus aktivieren" betätigen: kein Keystore-Fehler/keine InvalidAlgorithmParameterException. Auf jeder Seite steht "AKTIV: DASHBOARD-SERVER".
+[ ] 6. Server-Konten und Buchungen stimmen mit dem Dashboard überein. Bei Problemen zeigt die App einen expliziten Fehler; keine lokalen Buchungen statt Serverdaten.
+[ ] 7. Eine eindeutig gekennzeichnete TESTBUCHUNG in der Serveransicht erfassen; sie erscheint im Dashboard. Bei Unklarheit nicht nochmal erstellen; zuerst in der Weboberfläche prüfen.
+[ ] 8. Testbuchung im Servermodus mit Revision bearbeiten und löschen (nur wenn Rechte vorhanden). Danach im Dashboard verifizieren.
+[ ] 9. "Zu Lokal wechseln" oben benutzen: die lokale Testbuchung/der lokale Datenbestand sind unverändert; kein Serverdatensatz wird lokal kopiert.
+[ ] 10. App neu starten: zuletzt ausdrücklich gewählter Modus wird korrekt angezeigt; bei Netzwerkfehler keine heimliche Umschaltung auf lokale Buchungen.
+[ ] 11. (Optional, separate Financisto-TESTinstallation) Mehr -> Datensicherung -> Terminexport aktivieren UND "Auswahl speichern". Frische .backup erzeugen; geplante Termine im Original-Financisto prüfen, keine ungewollte Ausführung. Danach Option wieder deaktivieren.
+[ ] 12. Manuelle JSON-Sicherung und Download-Backup funktionieren weiterhin; kein Schlüssel im Export.
+
+WICHTIG: Bei einer unklaren Server-Schreibantwort nicht sofort eine neue Buchung anlegen. Die App verwahrt offene Aufträge verschlüsselt und verhindert automatisches Doppelsenden.
+
+Auffälligkeiten: _______________________________________________
