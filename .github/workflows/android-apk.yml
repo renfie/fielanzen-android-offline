@@ -8,7 +8,7 @@ name: Android APK – build and signed prerelease
 
 on:
   push:
-    branches: [main]
+    branches: [main, developer]
     tags: ['v0.1.0-alpha.*']
   workflow_dispatch:
     inputs:
