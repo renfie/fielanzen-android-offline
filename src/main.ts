@@ -35,11 +35,13 @@ import {readBookingList,saveBookingList,bookingListSettingsHtml,sortTransactionR
 import {appLock} from './app-lock.js';
 import {bookingCardHtml} from './booking-card-ui.js';
 import {calendarMonth,renderHomeComparison,type HomeComparisonFilter} from './home-comparison.js';
+import {renderHistory,localHistoryReport,historyBounds,type HistoryFilter} from './history-view.js';
+import {monthFromIndex,monthIndex} from './monthly-api.js';
 import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.34';
+export const APP_VERSION='0.1.0-alpha.35';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -55,6 +57,8 @@ let reportMonth = `${initialDate.getFullYear()}-${String(initialDate.getMonth()+
 let reportAccountFilter='all';
 let homeCompare:HomeComparisonFilter={first:reportMonth,second:calendarMonth(reportMonth,-1),currency:'EUR',account:'all',category:'all'};
 let homeFiltersOpen=false;
+let historyFilter:HistoryFilter={first:calendarMonth(reportMonth,-1),second:reportMonth,currency:'EUR',account:'all',category:'all'};
+let historyFiltersOpen=false;
 let bookingDateFrom='';
 let bookingDateTo='';
 let bookingCategoryFilter='all';
@@ -995,6 +999,45 @@ async function connectedServerClient():Promise<DashboardClient> {
     throw new Error('Geräteschlüssel und Serveradresse stimmen nicht überein. Bitte lokal umschalten und neu anmelden.');
   return new DashboardClient(stored.server,stored.token);
 }
+
+let homeMonthlySerial=0,historyMonthlySerial=0;
+/** Read-only server totals; never use paged bookings as a numerical fallback. */
+async function loadMonthlyFor(which:'home'|'history'):Promise<void>{
+  if(!serverMode)return;
+  const serial=which==='home'?++homeMonthlySerial:++historyMonthlySerial;
+  const server=remote.server;
+  const isHome=which==='home';
+  const filter=isHome?remote.homeCompare:remote.historyFilter;
+  if(isHome){remote.homeMonthly=null;remote.homeMonthlyError='';remote.homeMonthlyLoading=false;}
+  else{remote.historyMonthly=null;remote.historyMonthlyError='';remote.historyMonthlyLoading=false;}
+  if(remote.monthlySupported!==true){render();return;}
+  if(isHome)remote.homeMonthlyLoading=true;
+  else remote.historyMonthlyLoading=true;
+  render();
+  try{
+    const bounds=historyBounds(filter);
+    const selectedAccount=filter.account==='all'?undefined:Number(filter.account);
+    const selectedCategory=filter.category==='all'?undefined:Number(filter.category);
+    const client=await connectedServerClient();
+    const report=await client.monthlyReports({from:bounds.from,to:bounds.to,currency:filter.currency,
+      accountId:selectedAccount,categoryId:selectedCategory});
+    if(!serverMode||remote.server!==server||(isHome?serial!==homeMonthlySerial:serial!==historyMonthlySerial))return;
+    if(isHome)remote.homeMonthly=report;
+    else remote.historyMonthly=report;
+  }catch(error){
+    if(!serverMode||remote.server!==server||(isHome?serial!==homeMonthlySerial:serial!==historyMonthlySerial))return;
+    const message=error instanceof Error?error.message:'Monatsauswertung ist momentan nicht verfügbar.';
+    if(isHome)remote.homeMonthlyError=message;
+    else remote.historyMonthlyError=message;
+  }finally{
+    if(serverMode&&remote.server===server&&(isHome?serial===homeMonthlySerial:serial===historyMonthlySerial)){
+      if(isHome)remote.homeMonthlyLoading=false;
+      else remote.historyMonthlyLoading=false;
+      render();
+    }
+  }
+}
+
 async function loadRemoteServer(preservePages=false):Promise<void>{
   if(!serverMode||serverLoadBusy)return;
   serverLoadBusy=true;
@@ -1006,13 +1049,16 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     if(!(await client.capabilities()))throw new Error('Dashboard-Mobile-API v1 ist nicht bestätigt.');
     const session=await client.session();
     remote.session=session; // Authenticated; a faulty booking row must not masquerade as bad credentials.
-    const [accounts,categories,payees,first]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings()]);
+    const [accounts,categories,payees,first,monthlySupported]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings(),client.monthlyReportsSupported().catch(()=>false)]);
     const pending=parsePending((await secure.getPending()).json);
-    remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,expandedBookingId:null};
+    remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,expandedBookingId:null,
+      monthlySupported,homeMonthly:null,historyMonthly:null,homeMonthlyError:'',historyMonthlyError:''};
     if(!accounts.some(a=>a.currency===remote.reportCurrencyFilter))
       remote.reportCurrencyFilter=accounts[0]?.currency??'EUR';
     if(!accounts.some(a=>a.currency===remote.homeCompare.currency))
       remote.homeCompare.currency=accounts[0]?.currency??'EUR';
+    if(!accounts.some(a=>a.currency===remote.historyFilter.currency))
+      remote.historyFilter.currency=accounts[0]?.currency??'EUR';
     // This optional flag currently only specifies the future pagination policy.
     void preservePages;
   }catch(error){
@@ -1021,7 +1067,7 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     // Keep the authenticated session on data validation errors, never show local data.
     if(error instanceof DashboardApiError && (error.status===401||error.status===403))remote.session=null;
     remote.loading=false;
-  }finally{serverLoadBusy=false;render();}
+  }finally{serverLoadBusy=false;render();if(serverMode&&remote.monthlySupported===true)void loadMonthlyFor(view==='reports'?'history':'home');}
 }
 async function loadMoreRemoteHistory():Promise<void>{
   if(!serverMode||serverLoadBusy||!remote.nextBefore)return;
@@ -1381,6 +1427,7 @@ async function activateStagedDashboard():Promise<void>{
   // Disable only local background executions, never change local finance data.
   if(runningNatively())try{await nativeBackup().configure({...state.settings.autoBackup??defaultAutoBackup(),enabled:false});}catch{/* show later in local mode */}
   render();
+  void loadRemoteServer();
 }
 async function resumeServerSession():Promise<void>{
   const secure=secureSession();const credentials=await secure.getToken();
@@ -1449,8 +1496,11 @@ function render(): void {
       <span><strong>${serverMode?'AKTIV: DASHBOARD-SERVER':'AKTIV: LOKAL'}</strong><small>${serverMode?` · ${esc(remote.server)} · Buchungen nur auf dem Server`:' · Buchungen nur auf diesem Gerät'}</small></span>
       ${serverMode?'<button type="button" class="btn secondary" data-action="server-switch-local">Zu Lokal wechseln</button>':''}
     </div>
-    <main class="wrap" id="content" tabindex="-1">${message?`<div class="error" role="alert">${esc(message)}</div>`:''}${serverMode?(view==='settings'?serverSettingsHtml(remote)+appLockSettingsHtml()+licenseSettingsHtml():serverPageHtml(remote,view==='bookings'?'bookings':view==='reports'?'reports':view==='recurring'?'recurring':'home')):(view==='home'?homeHtml():view==='bookings'?bookingsViewHtml():view==='recurring'?recurringHtml():view==='reports'?reportsHtml():view==='import-audits'?importAuditsHtml():view==='data-check'?dataCheckHtml():settingsHtml())}</main>
-    <nav class="nav" aria-label="Hauptnavigation"><button data-action="go-home" class="${view==='home'?'active':''}"><span class="nav-icon">⌂</span>Übersicht</button><button data-action="go-bookings" class="${view==='bookings'?'active':''}"><span class="nav-icon">▤</span>Buchungen</button><button data-action="go-recurring" class="${view==='recurring'?'active':''}"><span class="nav-icon">↻</span>Regeln</button><button data-action="go-reports" class="${view==='reports'?'active':''}"><span class="nav-icon">▥</span>Monat</button><button data-action="go-settings" class="${view==='settings'||view==='import-audits'||view==='data-check'?'active':''}"><span class="nav-icon">⚙</span>Mehr</button></nav>`;
+    <main class="wrap" id="content" tabindex="-1">${message?`<div class="error" role="alert">${esc(message)}</div>`:''}${serverMode?(view==='settings'?serverSettingsHtml(remote)+appLockSettingsHtml()+licenseSettingsHtml():serverPageHtml(remote,view==='bookings'?'bookings':view==='reports'?'reports':view==='recurring'?'recurring':'home')):(view==='home'?homeHtml():view==='bookings'?bookingsViewHtml():view==='recurring'?recurringHtml():view==='reports'?renderHistory({prefix:'local-history',filter:historyFilter,
+  accounts:state.accounts.map(a=>({id:a.id,name:a.name,currency:'EUR'})),
+  categories:state.categories,report:localHistoryReport(state,historyFilter,today()),
+  filtersOpen:historyFiltersOpen,local:true}):view==='import-audits'?importAuditsHtml():view==='data-check'?dataCheckHtml():settingsHtml())}</main>
+    <nav class="nav" aria-label="Hauptnavigation"><button data-action="go-home" class="${view==='home'?'active':''}"><span class="nav-icon">⌂</span>Übersicht</button><button data-action="go-bookings" class="${view==='bookings'?'active':''}"><span class="nav-icon">▤</span>Buchungen</button><button data-action="go-recurring" class="${view==='recurring'?'active':''}"><span class="nav-icon">↻</span>Regeln</button><button data-action="go-reports" class="${view==='reports'?'active':''}"><span class="nav-icon">▥</span>Historie</button><button data-action="go-settings" class="${view==='settings'||view==='import-audits'||view==='data-check'?'active':''}"><span class="nav-icon">⚙</span>Mehr</button></nav>`;
   const logo = document.querySelector<HTMLImageElement>('.wolf-logo');
   if (logo) {
     const fallback = () => { logo.hidden = true; };
@@ -1665,6 +1715,7 @@ async function click(action: string, id?: number): Promise<void> {
       'server-reload','server-more-bookings','server-add-booking','server-edit-booking','server-delete-booking',
       'toggle-server-booking','server-reset-filters','server-previous-report-month','server-next-report-month','print-report',
       'server-home-reset','server-more-history',
+      'server-history-reset','server-history-last-2','server-history-last-12','server-history-reload',
       'server-recurring-reload','server-recurring-add','server-recurring-edit','server-recurring-save-mode',
       'server-recurring-post','server-recurring-delete',
       'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending']);
@@ -1739,8 +1790,17 @@ async function click(action: string, id?: number): Promise<void> {
         const current=today().slice(0,7);
         remote.homeCompare={...remote.homeCompare,first:current,second:calendarMonth(current,-1),
           account:'all',category:'all'};
-        render();return;
+        render();void loadMonthlyFor('home');return;
       }
+      case 'server-history-reset':
+      case 'server-history-last-2':
+      case 'server-history-last-12':{
+        const end=today().slice(0,7);
+        const first=calendarMonth(end,action==='server-history-last-12'?-11:-1);
+        remote.historyFilter={first,second:end,currency:remote.historyFilter.currency,account:'all',category:'all'};
+        render();void loadMonthlyFor('history');return;
+      }
+      case 'server-history-reload':void loadMonthlyFor('history');return;
       case 'server-add-booking':serverCreateDialog();return;
       case 'server-edit-booking':{
         const row=remote.bookings.find(x=>x.id===id);if(row)serverCreateDialog(row);return;
@@ -1781,7 +1841,7 @@ async function click(action: string, id?: number): Promise<void> {
       dashboardProbeResult='Lokal bleibt aktiv. Kein Servermodus aktiviert; keine Buchungen übertragen.';
       render();break;
     }
-    case 'go-home':view='home';render();break;
+    case 'go-home':view='home';render();if(serverMode)void loadMonthlyFor('home');break;
     case 'local-home-reset':{
       const current=today().slice(0,7);
       homeCompare={first:current,second:calendarMonth(current,-1),currency:'EUR',account:'all',category:'all'};
@@ -1800,7 +1860,16 @@ async function click(action: string, id?: number): Promise<void> {
       catch(e){message=String(e);render();}break;
     }
     case 'go-recurring':view='recurring';render();break;
-    case 'go-reports':view='reports';render();break;
+    case 'go-reports':view='reports';render();if(serverMode)void loadMonthlyFor('history');break;
+    case 'local-history-reset':
+    case 'local-history-last-2':
+    case 'local-history-last-12':{
+      const end=today().slice(0,7);
+      const first=calendarMonth(end,action==='local-history-last-12'?-11:-1);
+      historyFilter={first,second:end,currency:'EUR',account:'all',category:'all'};
+      render();break;
+    }
+    case 'local-history-reload':render();break;
     case 'previous-report-month':reportMonth=monthOffset(reportMonth,-1);render();break;
     case 'next-report-month':reportMonth=monthOffset(reportMonth,1);render();break;
     case 'export-bookings-csv':try{const rows=filteredBookings();if(!rows.length)throw new Error('Keine Buchungen zum Exportieren.');await downloadText(exportBookingsCsv(rows,state),`FieLanzen-Buchungen-${today()}.csv`,'text/csv;charset=utf-8');}catch(e){message=String(e);render();}break;
@@ -1946,6 +2015,8 @@ document.addEventListener('toggle',e=>{
   if(el instanceof HTMLDetailsElement && el.id==='home-account-balances')homeBalancesOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='local-home-month-filters')homeFiltersOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='server-home-month-filters')remote.homeFiltersOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='local-history-filters')historyFiltersOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-history-filters')remote.historyFiltersOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='server-home-account-balances')remote.balancesOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='server-booking-advanced-filters')remote.filtersOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='booking-advanced-filters')bookingFiltersOpen=el.open;
@@ -1957,6 +2028,25 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   if(!appUnlocked)return;
   const target=e.target as HTMLInputElement;
+  if(target.id.startsWith('local-history-')||target.id.startsWith('server-history-')){
+    const isServer=target.id.startsWith('server-history-');
+    if(isServer!==serverMode)return;
+    const prefix=isServer?'server-history-':'local-history-';
+    const suffix=target.id.slice(prefix.length);
+    const current=isServer?remote.historyFilter:historyFilter;
+    const next={...current};
+    if(suffix==='month-a'||suffix==='month-b'){
+      if(!/^(?:19|20|21)\d{2}-(0[1-9]|1[0-2])$/.test(target.value))return;
+      next[suffix==='month-a'?'first':'second']=target.value;
+    }else if(suffix==='currency'){next.currency=target.value;next.account='all';}
+    else if(suffix==='account')next.account=target.value;
+    else if(suffix==='category')next.category=target.value;
+    else return;
+    try{historyBounds(next);}catch(error){message=error instanceof Error?error.message:String(error);render();return;}
+    if(isServer){remote.historyFilter=next;void loadMonthlyFor('history');}
+    else{historyFilter=next;render();}
+    return;
+  }
   if(target.id.startsWith('local-home-')||target.id.startsWith('server-home-')){
     const isServer=target.id.startsWith('server-home-');
     if(isServer!==serverMode)return;
@@ -1971,7 +2061,7 @@ document.addEventListener('change',e=>{
     }else if(suffix==='account')next.account=target.value;
     else if(suffix==='category')next.category=target.value;
     else return;
-    render();return;
+    if(isServer)void loadMonthlyFor('home');else render();return;
   }
   if(['booking-list-size','booking-list-sort','local-list-sort','server-list-sort'].includes(target.id)){
     const current=readBookingList();

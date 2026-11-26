@@ -41,9 +41,9 @@ test('home comparison filters by currency, account and category, never counts tr
 });
 test('partial home summary shows unknown months as missing rather than financial zeros',()=>{
  const html=renderHomeComparison({prefix:'server-home',filter,accounts,categories:[],bookings:[],
-   complete:false,defaultCurrency:'EUR'});
+   complete:false,defaultCurrency:'EUR',remoteSupported:false});
  assert.match(html,/Nicht vollständig|Keine Daten für diesen Monat geladen/);
- assert.match(html,/Vorläufig/);
+ assert.match(html,/Serverwerte fehlen/);
  assert.match(html,/–/);
  assert.doesNotMatch(html,/<i class="home-compare-income"/);
  assert.match(html,/server-home-month-a/);
@@ -67,18 +67,17 @@ test('server overview has comparison filters and read-only reconciliation link, 
  assert.match(home,/Monatsvergleich/);
  assert.match(home,/Kontostand im Dashboard abgleichen/);
  assert.match(home,/Inaktiv/);
- assert.match(home,/Vorläufig/);
+ assert.match(home,/Serverwerte fehlen/);
  assert.doesNotMatch(home,/Alle Daten lokal auf diesem Gerät/);
 });
 test('server trend hides zero-width fake bars for unknown periods and separates currencies',()=>{
  const data={...emptyServerData(),server:'https://example.org',accounts,bookings,
    reportMonth:'2026-11',reportCurrencyFilter:'EUR',nextBefore:'200'};
  const html=serverPageHtml(data,'reports');
- assert.match(html,/Nicht geladen/);
- assert.match(html,/server-more-history/);
- assert.match(html,/server-report-currency-filter/);
+ assert.match(html,/Historie/);
+ assert.match(html,/server-history-currency/);
+ assert.match(html,/Keine vollständige Monatsauswertung/);
  assert.doesNotMatch(html,/style="width:0%"/);
- assert.match(html,/12 Monate bis/);
  assert.match(read('src/server-ui.ts'),/currencyAccounts\.has\(b\.accountId\)/);
 });
 test('app provides local and remote filter actions and does not silently fetch all API pages',()=>{
@@ -89,5 +88,5 @@ test('app provides local and remote filter actions and does not silently fetch a
  assert.match(main,/homeCompare:HomeComparisonFilter/);
  assert.match(main,/server-home-month-filters/);
  assert.match(main,/local-home-month-filters/);
- assert.match(read('package.json'),/0\.1\.0-alpha\.34/);
+ assert.match(read('package.json'),/0\.1\.0-alpha\.35/);
 });

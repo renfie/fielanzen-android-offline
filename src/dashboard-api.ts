@@ -14,6 +14,7 @@ import {mtlsHttp,useMtlsFor} from './mtls-http.js';
 import {isClientCertificateChallenge} from './dashboard-connection.js';
 import {DashboardApiError,parseAccounts,parseCategories,parsePayees,parseBookings,parseSession,parseCapabilities} from './dashboard-protocol.js';
 import {recurringCapability,parseServerRecurringRules} from './server-recurring.js';
+import {buildMonthlyPath,monthlyReportsCapability,parseMonthlyReport,type MonthQuery,type MonthlyReport} from './monthly-api.js';
 import type {ServerRecurringRule} from './server-recurring.js';
 import type {RemoteAccount,RemoteCategory,RemotePayee,RemotePage,RemoteDraft,RemoteBooking,DashboardSession,PendingWrite} from './dashboard-protocol.js';
 export type {RemoteAccount,RemoteCategory,RemotePayee,RemotePage,RemoteDraft,RemoteBooking,DashboardSession,PendingWrite};
@@ -84,6 +85,12 @@ export class DashboardClient {
   payees():Promise<RemotePayee[]>{return apiCall(this.base,API+'/payees','GET',this.token).then(parsePayees);}
   recurringSupported():Promise<boolean>{
     return apiCall(this.base,API+'/capabilities').then(recurringCapability);
+  }
+  monthlyReportsSupported():Promise<boolean>{
+    return apiCall(this.base,API+'/capabilities').then(monthlyReportsCapability);
+  }
+  monthlyReports(query:MonthQuery):Promise<MonthlyReport>{
+    return apiCall(this.base,buildMonthlyPath(query),'GET',this.token).then(parseMonthlyReport);
   }
   recurringRules():Promise<ServerRecurringRule[]>{
     return apiCall(this.base,API+'/recurring','GET',this.token).then(parseServerRecurringRules);

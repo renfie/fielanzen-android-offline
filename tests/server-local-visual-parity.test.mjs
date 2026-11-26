@@ -92,8 +92,8 @@ test('report and recurring pages match local layout but clearly mark API limits'
   const data=sample();
   data.nextBefore='200'; // Verify warning for incompletely paged mobile reports.
   const report=serverPageHtml(data,'reports');
-  for(const heading of ['Monatsbericht','Haushaltsauswertung','report-grid','report-month','Ausgaben nach Kategorien',
-    'Einnahmen nach Kategorien','trend-list','server-report-month','server-report-account-filter','Vorläufige Auswertung']){
+  for(const heading of ['<h1>Historie</h1>','Filter und Zeitraum','server-history-month-a','server-history-month-b',
+    'server-history-account','server-history-currency','Keine vollständige Monatsauswertung']){
     assert.ok(report.includes(heading),heading);
   }
   const recurring=serverPageHtml(data,'recurring');

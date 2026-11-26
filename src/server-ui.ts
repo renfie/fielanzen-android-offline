@@ -8,6 +8,8 @@ import type {RemoteAccount,RemoteBooking,RemoteCategory,DashboardSession,Pending
 import {readBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {bookingCardHtml} from './booking-card-ui.js';
 import {renderHomeComparison,calendarMonth,type HomeComparisonFilter} from './home-comparison.js';
+import type {MonthlyReport} from './monthly-api.js';
+import {renderHistory,type HistoryFilter} from './history-view.js';
 import type {ServerRecurringRule} from './server-recurring.js';
 export type ServerPeriod='7'|'30'|'90'|'180'|'all';
 export interface ServerViewData {
@@ -19,6 +21,9 @@ export interface ServerViewData {
   accountFilter:string;categoryFilter:string;dateFrom:string;dateTo:string;
   reportMonth:string;reportAccountFilter:string;reportCurrencyFilter:string;
   homeCompare:HomeComparisonFilter;homeFiltersOpen:boolean;
+  monthlySupported:boolean|null;homeMonthly:MonthlyReport|null;historyMonthly:MonthlyReport|null;
+  homeMonthlyLoading:boolean;historyMonthlyLoading:boolean;homeMonthlyError:string;historyMonthlyError:string;
+  historyFilter:HistoryFilter;historyFiltersOpen:boolean;
   recurringSupported:boolean;recurringLoaded:boolean;recurringLoading:boolean;
   recurringRules:ServerRecurringRule[];recurringError:string;
 }
@@ -33,6 +38,10 @@ export const emptyServerData=():ServerViewData=>({
   period:'30',periodExplicit:false,kindFilter:'all',accountFilter:'all',categoryFilter:'all',
   dateFrom:'',dateTo:'',reportMonth:currentMonth(),reportAccountFilter:'all',reportCurrencyFilter:'EUR',
   homeCompare:{first:currentMonth(),second:calendarMonth(currentMonth(),-1),currency:'EUR',account:'all',category:'all'},homeFiltersOpen:false,
+  monthlySupported:null,homeMonthly:null,historyMonthly:null,homeMonthlyLoading:false,historyMonthlyLoading:false,
+  homeMonthlyError:'',historyMonthlyError:'',
+  historyFilter:{first:calendarMonth(currentMonth(),-1),second:currentMonth(),currency:'EUR',account:'all',category:'all'},
+  historyFiltersOpen:false,
   recurringSupported:false,recurringLoaded:false,recurringLoading:false,recurringRules:[],recurringError:''
 });
 const esc=(v:unknown):string=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -295,7 +304,11 @@ export function serverPageHtml(data:ServerViewData,screen:'home'|'bookings'|'rec
       <button class="btn danger" data-action="server-discard-pending">Nach Kontrolle freigeben</button></div></section>`:'';
   const status=error+loading+pending;
   if(screen==='recurring')return status+serverRecurringHtml(data)+serverConnectionInfo(data);
-  if(screen==='reports')return status+serverReportsHtml(data)+serverConnectionInfo(data);
+  if(screen==='reports')return status+renderHistory({
+    prefix:'server-history',filter:data.historyFilter,accounts:data.accounts,categories:data.categories,
+    report:data.historyMonthly,loading:data.historyMonthlyLoading,error:data.historyMonthlyError,
+    unsupported:data.monthlySupported===false,filtersOpen:data.historyFiltersOpen
+  })+serverConnectionInfo(data);
   const prefs=readBookingList();
   const canWrite=Boolean(data.session?.canWrite&&!data.pending);
   if(screen==='home'){
@@ -317,7 +330,9 @@ export function serverPageHtml(data:ServerViewData,screen:'home'|'bookings'|'rec
     const comparison=renderHomeComparison({
       prefix:'server-home',filter:{...data.homeCompare,currency:selectedCurrency},
       accounts:data.accounts,categories:data.categories,bookings:data.bookings,
-      complete:data.nextBefore===null,defaultCurrency:selectedCurrency,filtersOpen:data.homeFiltersOpen
+      complete:false,defaultCurrency:selectedCurrency,filtersOpen:data.homeFiltersOpen,
+      fullReport:data.homeMonthly,remoteError:data.homeMonthlyError,
+      remoteLoading:data.homeMonthlyLoading,remoteSupported:data.monthlySupported
     });
     return `${status}<section class="intro"><div><div class="eyebrow">Deine Finanzen im Blick</div><h1>Übersicht</h1>
         <div class="muted small">Alle Daten vom Dashboard-Server</div></div>

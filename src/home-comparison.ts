@@ -5,6 +5,7 @@
 // See LICENSE for the complete license text.
 
 /** Local and remote overview: same month comparison, isolated data inputs. */
+import type {MonthlyReport} from './monthly-api.js';
 export type HomeComparisonFilter={
   first:string; second:string;currency:string;account:string;category:string;
 };
@@ -45,13 +46,27 @@ export function renderHomeComparison(args:{
   prefix:string;filter:HomeComparisonFilter;accounts:readonly HomeCompareAccount[];
   categories:readonly HomeCompareCategory[];bookings:readonly HomeCompareBooking[];
   complete:boolean;defaultCurrency:string;filtersOpen?:boolean;
+  fullReport?:MonthlyReport|null;remoteSupported?:boolean|null;
+  remoteLoading?:boolean;remoteError?:string;
 }):string {
-  const {prefix,filter,accounts,categories,bookings,complete}=args;
+  const {prefix,filter,accounts,categories,bookings}=args;
+  const isRemote=args.remoteSupported!==undefined;
+  const full=isRemote?args.fullReport:null;
+  const complete=isRemote?Boolean(full):args.complete;
   const currencies=[...new Set(accounts.map(a=>a.currency))].sort();
   const currency=currencies.includes(filter.currency)?filter.currency:args.defaultCurrency;
   const selected={...filter,currency};
-  const a=homeMonthTotals(bookings,filter.first,selected,accounts);
-  const b=homeMonthTotals(bookings,filter.second,selected,accounts);
+  const reportMatch=full&&full.currency===currency&&
+    [filter.first,filter.second].every(m=>full.months.some(v=>v.month===m));
+  const totals=(month:string):HomeMonthTotals=>{
+    if(isRemote){
+      const row=reportMatch?full?.months.find(m=>m.month===month):undefined;
+      return {month,income:row?.incomeMinor??0,expense:row?.expenseMinor??0,count:row?.bookingCount??0};
+    }
+    return homeMonthTotals(bookings,month,selected,accounts);
+  };
+  const a=totals(filter.first);
+  const b=totals(filter.second);
   const account=accounts.find(x=>x.currency===currency);
   const format=(value:number)=>{
     const decimals=account?.decimals??2;
@@ -62,7 +77,7 @@ export function renderHomeComparison(args:{
   const label=(v:number)=>Math.max(0,Math.min(100,Math.round(v/max*100)));
   const opt=(value:string,name:string,chosen:string)=>`<option value="${escape(value)}" ${value===chosen?'selected':''}>${escape(name)}</option>`;
   const monthCard=(totals:HomeMonthTotals,index:1|2)=>{
-    const known=complete||totals.count>0;
+    const known=isRemote?Boolean(reportMatch):complete||totals.count>0;
     const money=(value:number)=>known?escape(format(value)):'–';
     return `<div class="home-compare-month">
     <div class="home-compare-title ${index===1?'first':'second'}"><small>MONAT ${index}${index===1?' · AUSWAHL':' · VERGLEICH'}</small>
@@ -85,8 +100,12 @@ export function renderHomeComparison(args:{
       <label class="field">Kategorie<select id="${prefix}-category">${opt('all','Alle Kategorien',selected.category)}${categories.map(x=>opt(String(x.id),x.name,selected.category)).join('')}</select></label>
       <button type="button" class="btn secondary home-compare-reset" data-action="${prefix}-reset">Aktueller Monat / Vormonat</button>
     </div></details>
-    <div class="section-title"><h2>Monatsvergleich</h2><span class="muted small">${complete?'Vollständige Buchungen':'Vorläufig · geladene Serverseiten'}</span></div>
+    <div class="section-title"><h2>Monatsvergleich</h2><span class="muted small">${isRemote?(reportMatch?'Vollständige Serverwerte':'Serverwerte fehlen'):'Lokale Buchungen'}</span></div>
     <div class="home-compare-grid">${monthCard(a,1)}${monthCard(b,2)}</div>
-    ${!complete?'<p class="notice">Die Mobile-API liefert hier nur bereits geladene Buchungen. Diese Werte sind vorläufig und können vom vollständigen Dashboard-Monatsbericht abweichen. Fehlende Monate bedeuten nicht 0 €.</p>':''}
+    ${isRemote&&!reportMatch?'<p class="notice">'+
+      escape(args.remoteLoading?'Die vollständigen Monatswerte werden vom Server geladen …':
+        args.remoteSupported===false?'Der Dashboard-Server bietet die Monats-API noch nicht an.':
+        args.remoteError||'Vollständige Monatswerte sind derzeit nicht verfügbar.')+
+      ' Keine Berechnung aus einzelnen geladenen Buchungsseiten.</p>':''}
   </section>`;
 }

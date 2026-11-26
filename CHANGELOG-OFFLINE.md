@@ -2,6 +2,14 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.35 (26.11.2026) – Historische Auswertung statt Monatsansicht (developer)
+- Der Reiter **„Monat“** wird zu **„Historie“**. Die Ansicht übernimmt die Struktur der mobilen Dashboard-Historie mit Kennzahlen, Monatsbalken sowie getrennten Kategorien-Kreisdiagrammen für Einnahmen und Ausgaben.
+- Gemeinsame Android-Oberfläche für lokale SQLite-Daten und autoritative Monatsdaten der Dashboard-Mobile-API. Filter für bis zu 36 Monate, Währung, Konto und Kategorie.
+- Die neue API `/api/mobile/v1/reports/monthly` wird nur mit exakt aktivierter Capability `monthly_reports: true` verwendet. Bei Fehlern oder fehlender Funktion keine Berechnung vermeintlich vollständiger Monatswerte aus paginierten Einzelbuchungen.
+- Höchste Einzelbuchungen erscheinen im Servermodus erst nach optionaler `highlights`-Ergänzung der API; bis dahin wird deren Verfügbarkeit klar angezeigt. Lokal werden sie aus vollständigen Gerätedaten ermittelt.
+- Auch der Monatsvergleich der Server-Startseite verwendet jetzt ausschließlich vollständige API-Monatswerte. Keine Änderungen an lokalen Datenbanken, Sicherungen oder Server-Schreiboperationen.
+- Nur `developer`; Debug-Testbuild; kein Merge nach `main`. Geräteprüfung noch ausstehend.
+
 ## 0.1.0-alpha.34 (26.11.2026) – Monatsvergleich, Kontenübersicht und verlässliche Verlaufskennzeichnung (developer)
 - Startseiten beider Datenquellen: frei wählbare Monate 1 und 2, Währung, Konto und Kategorie sowie eine gemeinsame grafische Gegenüberstellung von Einnahmen und Ausgaben.
 - Serverkonten nach aktiven Konten mit Saldo, inaktiven Konten und Nullkonten gegliedert. Ein Verweis öffnet den Kontostandsabgleich im Dashboard; kein ungesicherter Saldo-Schreibvorgang über die vorhandene Buchungs-API.

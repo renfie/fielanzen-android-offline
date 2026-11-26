@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## 0.1.0-alpha.35 (2026-11-26) – Historical analysis replaces monthly tab (developer)
+- Rename **Monat** to **Historie** and introduce the same historical layout in local and server modes: period KPIs, monthly income/expense bars, and expense/income category donut charts.
+- Filter by 2–36 months, account, category and currency. Local figures come exclusively from on-device SQLite.
+- Server history and homepage comparisons use authenticated, fully aggregated `/api/mobile/v1/reports/monthly` when `features.monthly_reports: true` is advertised; never mistake partial bookings for full reports.
+- The highest individual income/expense highlights in server mode require a backwards-compatible optional `highlights` API extension. Until then, the UI explicitly marks them unavailable; the local mode derives them from the complete local ledger.
+- No changes to database schemas, backup formats or server write APIs. Developer debug build only, pending on-device verification.
+
 ## 0.1.0-alpha.34 (2026-11-26) – Month comparison, account display and honest partial-trend handling (developer)
 - Both home screens share month A/B selection with currency, account and category filters plus comparable income/expense bars.
 - Server account list prioritizes active accounts with balances, identifies inactive accounts, and links to Dashboard reconciliation without creating unauthorized or inconsistent API writes.
