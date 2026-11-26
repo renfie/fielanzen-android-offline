@@ -2,6 +2,52 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.37 (26.11.2026) – Kontostandsabgleich direkt in Android (main)
+- Die vorhandene Kontostandsabgleich-Maske steht nun ohne Web-Weiterleitung auch im Dashboard-Servermodus zur Verfügung. Lokale Finanzdaten und deren Abgleichroutine bleiben unverändert.
+- Voraussetzung: `features.account_reconciliation === true`, authentifizierte Schreibberechtigung und `finance_mode=web`. Nur aktive Konten mit gültigem Ist-Saldo auswählbar.
+- Eingabe und Vorschau für signierte Ist-Kontostände mit 0–3 Nachkommastellen. Der Server berechnet und bucht die Differenz über den eigenen geschützten Endpunkt.
+- Vor jedem POST wird der exakte Auftrag mit UUID verschlüsselt gespeichert; unklare Antworten erlauben ausschließlich einen ausdrücklich ausgelösten identischen Wiederholungsversuch.
+- Bei HTTP 409 wird der Serverkontostand neu gelesen und bei Änderungen eine erneute ausdrückliche Bestätigung verlangt. Positive, negative und Null-Differenzen sowie unveränderte Beträge werden entsprechend der Serverantwort gemeldet.
+- Nach Bestätigung werden Serverkonten, Buchungsseiten und vollständige Monatsauswertungen aktualisiert. Kein lokaler Datentransfer, keine Änderung von Backupformat oder Dashboard-API.
+- Alpha 32–37 aus `developer` auf `main` übernommen; Signatur-Prerelease wird über den vorhandenen GitHub-Workflow erstellt. Historische Meilenstein-Testpläne aus `docs/` entfernt; sie sind in der Git-Historie weiterhin verfügbar. Geräteprüfung ausstehend.
+
+## 0.1.0-alpha.36 (26.11.2026) – Diagramme in der Android-Historie repariert (developer)
+- Das leere Diagrammfeld über der Kategorienliste wurde behoben: Kreissegmente werden in Android WebView als SVG statt als durch die App-Sicherheitsrichtlinie gesperrter Inline-CSS-Farbverlauf gezeichnet.
+- Auch die Einnahmen-/Ausgabenbalken der Monatsübersicht verwenden jetzt SVG und korrekte proportionale Balkenbreiten ohne Inline-Style-Attribute.
+- Kategorienfarben in der Legende und die Abstände auf schmalen Displays wurden angepasst, ohne Kategorien auszublenden.
+- Die bestehende Content-Security-Policy bleibt streng; keine Freigabe von `unsafe-inline`, keine externen Diagrammbibliotheken.
+- Gemeinsame Anzeige lokal und Server; Datenmodelle, Backups, Buchungs-APIs und Dashboard bleiben unverändert. Geräteprüfung ausstehend.
+
+## 0.1.0-alpha.35 (26.11.2026) – Historische Auswertung statt Monatsansicht (developer)
+- Der Reiter **„Monat“** wird zu **„Historie“**. Die Ansicht übernimmt die Struktur der mobilen Dashboard-Historie mit Kennzahlen, Monatsbalken sowie getrennten Kategorien-Kreisdiagrammen für Einnahmen und Ausgaben.
+- Gemeinsame Android-Oberfläche für lokale SQLite-Daten und autoritative Monatsdaten der Dashboard-Mobile-API. Filter für bis zu 36 Monate, Währung, Konto und Kategorie.
+- Die neue API `/api/mobile/v1/reports/monthly` wird nur mit exakt aktivierter Capability `monthly_reports: true` verwendet. Bei Fehlern oder fehlender Funktion keine Berechnung vermeintlich vollständiger Monatswerte aus paginierten Einzelbuchungen.
+- Höchste Einzelbuchungen erscheinen im Servermodus erst nach optionaler `highlights`-Ergänzung der API; bis dahin wird deren Verfügbarkeit klar angezeigt. Lokal werden sie aus vollständigen Gerätedaten ermittelt.
+- Auch der Monatsvergleich der Server-Startseite verwendet jetzt ausschließlich vollständige API-Monatswerte. Keine Änderungen an lokalen Datenbanken, Sicherungen oder Server-Schreiboperationen.
+- Nur `developer`; Debug-Testbuild; kein Merge nach `main`. Geräteprüfung noch ausstehend.
+
+## 0.1.0-alpha.34 (26.11.2026) – Monatsvergleich, Kontenübersicht und verlässliche Verlaufskennzeichnung (developer)
+- Startseiten beider Datenquellen: frei wählbare Monate 1 und 2, Währung, Konto und Kategorie sowie eine gemeinsame grafische Gegenüberstellung von Einnahmen und Ausgaben.
+- Serverkonten nach aktiven Konten mit Saldo, inaktiven Konten und Nullkonten gegliedert. Ein Verweis öffnet den Kontostandsabgleich im Dashboard; kein ungesicherter Saldo-Schreibvorgang über die vorhandene Buchungs-API.
+- Server-Reiter „Monat“: Monate ohne vollständig geladene Historie werden nicht länger als verlässliche 0 € oder durch volle Balken dargestellt. Teilzahlen sind als vorläufig erkennbar; weitere Serverseiten lassen sich kontrolliert nachladen.
+- Währungsbezogene Filter verhindern die Addition verschiedener Währungen in Monatsauswertungen; bestehende Lese-/Schreibrechte und die Trennung lokaler und Serverdaten bleiben unverändert.
+- Kein Dashboard-Update, keine Migration von Finanzdaten, keine Änderung der Sicherungsformate. Eine echte vollständige Monatsauswertung benötigt langfristig einen dedizierten Mobile-API-Endpunkt.
+
+## 0.1.0-alpha.33 (26.11.2026) – Tastaturfreundliche Empfänger- und Kategorieauswahl (developer)
+- Einheitliche, kompakte Suchvorschläge beim Anlegen und Bearbeiten von **lokalen Buchungen und Regeln** sowie **Serverbuchungen und Serverregeln**.
+- Vorschlagslisten werden wie in der mobilen Dashboard-Webansicht anhand des sichtbaren Bildschirmbereichs inklusive Android-Bildschirmtastatur oberhalb oder unterhalb des Eingabefelds positioniert. Maximal etwa vier Treffer gleichzeitig sichtbar, weitere per Scrollen.
+- Beim Öffnen werden häufig verwendete Empfänger und Kategorien bevorzugt; die Suche berücksichtigt Wortanfänge, Groß-/Kleinschreibung und Akzentzeichen. Ausgewählte Werte lassen sich durch einfaches Weitertippen ersetzen.
+- Neue Empfängernamen bleiben als Freitext möglich. Kategorien müssen weiterhin explizit ausgewählt werden; lokale neue Kategorien können wie bisher angelegt werden. Die bestehende Trennung lokaler und serverbasierter Finanzdaten bleibt erhalten.
+- Kein Dashboard-Update und keine Änderung von Datenbanken, Backups oder Schreib-APIs. Ausschließlich Debug-Testbuild auf `developer`; Android-Geräteprüfung steht aus.
+
+## 0.1.0-alpha.32 (26.11.2026) – Einheitliche Oberfläche und Vorbereitung wiederkehrender Serverregeln (developer)
+- **Einheitliche Oberfläche:** Lokale und serverbasierte Buchungen verwenden gemeinsame Buchungskarten mit gleichen Farben, Statussymbolen, Abständen, einklappbaren Details und Schaltflächengrößen.
+- **Serverübersicht:** Gleiche Struktur wie lokal mit Kontoständen, Monatsbereich, Buchungssuche sowie Filter- und Sortiermöglichkeiten. Auswertungen auf Grundlage nur geladener API-Seiten werden als möglicherweise unvollständig gekennzeichnet.
+- **Wiederkehrende Serverregeln:** Android-Oberfläche für Anzeigen, Anlegen, Bearbeiten, Pausieren, manuelle/automatische Modi, bestätigte fällige Buchungen und Archivierung vorbereitet. Lokale Regeln bleiben strikt getrennt.
+- **API-Abhängigkeit:** Die Funktionen bleiben deaktiviert, bis das Dashboard die vollständige Mobile-API unter `features.recurring_rules: true` freigibt. Der API-Vertrag einschließlich Rechten, Administratorfreigabe, `If-Match` und Idempotenz ist dokumentiert; die Server-Endpunkte werden dadurch noch nicht bereitgestellt.
+- **Sicherheit und Datenbestand:** Bestehende Berechtigungsprüfungen, ausstehende Schreibaufträge und getrennte Datenquellen bleiben erhalten. Keine Migration lokaler Finanzdaten und keine Änderung des Finanzbackups oder Dashboards.
+- **Veröffentlichung:** Ausschließlich Entwicklungsstand auf `developer` mit Debug-Test-APK, kein signierter Release auf `main`. Die Android-Geräteprüfung steht aus.
+
 ## 0.1.0-alpha.31 (23.11.2026) – Copyright und Quellcode-Hinweise
 - Eigener Quellcode, native Android-Klassen, Skripte und Tests mit `SPDX-License-Identifier: GPL-2.0-only` sowie `Copyright (C) 2026 René Fieler (RenFie)` gekennzeichnet, passend zur jeweiligen Dateisyntax. Drittanbieter- und generierter Code bleibt unverändert.
 - Unter Mehr → GPLv2 · Rechte & Pflichten steht der volle Name sichtbar; ebenso im offline verfügbaren Lizenzdialog. Keine Änderung des GNU-GPLv2-Lizenzvolltexts.

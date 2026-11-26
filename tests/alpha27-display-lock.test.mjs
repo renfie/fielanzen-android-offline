@@ -9,15 +9,19 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-test('server cards are closed by default and actions only within details',()=>{
-  const src=read('src/server-ui.ts');
-  assert.ok(src.includes('<details class="server-transaction"'));
+test('both sources use the same initially collapsed booking-card markup',()=>{
+  const src=read('src/server-ui.ts'),local=read('src/main.ts'),shared=read('src/booking-card-ui.ts');
+  assert.match(local,/return bookingCardHtml\(\{/);
+  assert.match(src,/return bookingCardHtml\(\{/);
+  assert.match(src,/expanded:data\.expandedBookingId===b\.id/);
+  assert.match(src,/label:'Revision'/);
+  assert.match(shared,/<article class="booking-entry/);
+  assert.match(shared,/aria-expanded=/);
+  assert.match(shared,/class="booking-details"/);
+  assert.match(shared,/card\.expanded\?/);
+  assert.match(src,/server-edit-booking/);
+  assert.match(src,/server-delete-booking/);
   assert.doesNotMatch(src,/settings-line server-booking/);
-  const detail=src.indexOf('server-transaction-details');
-  assert.ok(detail>=0);
-  assert.ok(src.indexOf('server-edit-booking')>detail);
-  assert.ok(src.indexOf('revision-value')>detail);
-  assert.ok(src.indexOf('server-more-bookings')>detail);
 });
 test('same display settings on local and server with saved 30 50 100 and sort',()=>{
   const p=read('src/booking-list-preferences.ts'),main=read('src/main.ts'),server=read('src/server-ui.ts');

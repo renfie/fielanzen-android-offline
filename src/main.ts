@@ -19,22 +19,32 @@ import type {Booking, BookingInput, BookingType, CategoryKind, Snapshot,ImportRe
 import {accountBalance, checkBooking, defaultAutoBackup, emptySnapshot, formatEuro, parseEuro, parseSignedEuro} from './types.js';
 import {bookingTotals,calculateBalances,exportBookingsCsv,inspectSnapshot,inventoryAsText,lastPayeeUsage,monthOffset,monthlyTrend} from './analysis.js';
 import {categorySuggestions, filterManagedCategories} from './category-ui.js';
+import {attachDialogSuggestions,rankSuggestions,suggestionKey} from './suggestion-ui.js';
 import {planAccountReconciliation} from './reconcile.js';
+import {reconciliationPreview,parseReconciliationAmount,formatReconciliationInput,makeReconciliationPending,
+  isReconciliationPending,parseReconciliationResult,canReconcile} from './server-reconciliation.js';
+import type {ReconciliationResult} from './server-reconciliation.js';
 import {normalizeDashboardUrl,probeDashboard,DashboardClient,createPendingWrite} from './dashboard-api.js';
 import type {RemoteAccount,RemoteCategory,RemotePayee,RemoteBooking,RemoteDraft,PendingWrite} from './dashboard-api.js';
 import {validateRemoteDraft,parsePending,DashboardApiError} from './dashboard-protocol.js';
 import {secureSession} from './secure-session.js';
 import {mtlsHttp} from './mtls-http.js';
 import {connectWithOptionalClientCertificate} from './dashboard-connection.js';
-import {serverPageHtml,serverSettingsHtml,emptyServerData,formatMinor,serverBookingResultsHtml,filterRemoteBookings} from './server-ui.js';
+import {serverPageHtml,serverSettingsHtml,emptyServerData,formatMinor,serverBookingResultsHtml,displayedServerBookings,serverBookingSummaryHtml} from './server-ui.js';
 import type {ServerViewData} from './server-ui.js';
+import {createRecurringPendingWrite,validateServerRecurringDraft} from './server-recurring.js';
+import type {ServerRecurringRule,ServerRecurringDraft,ServerRecurringMode,ServerRecurringFrequency} from './server-recurring.js';
 import {readBookingList,saveBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {appLock} from './app-lock.js';
+import {bookingCardHtml} from './booking-card-ui.js';
+import {calendarMonth,renderHomeComparison,type HomeComparisonFilter} from './home-comparison.js';
+import {renderHistory,localHistoryReport,historyBounds,type HistoryFilter} from './history-view.js';
+import {monthFromIndex,monthIndex} from './monthly-api.js';
 import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.31';
+export const APP_VERSION='0.1.0-alpha.37';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -48,6 +58,10 @@ let inventoryCacheReport:ImportReport|null=null;
 const initialDate=new Date();
 let reportMonth = `${initialDate.getFullYear()}-${String(initialDate.getMonth()+1).padStart(2,'0')}`;
 let reportAccountFilter='all';
+let homeCompare:HomeComparisonFilter={first:reportMonth,second:calendarMonth(reportMonth,-1),currency:'EUR',account:'all',category:'all'};
+let homeFiltersOpen=false;
+let historyFilter:HistoryFilter={first:calendarMonth(reportMonth,-1),second:reportMonth,currency:'EUR',account:'all',category:'all'};
+let historyFiltersOpen=false;
 let bookingDateFrom='';
 let bookingDateTo='';
 let bookingCategoryFilter='all';
@@ -352,28 +366,28 @@ function accountCards(): string {
 function bookingListItem(b: Booking): string {
   const expanded = expandedBookingId === b.id;
   const title = b.type === 'transfer' ? `${getAccount(b.accountId)} → ${getAccount(b.otherAccountId!)}` : (getPayee(b.payeeId) || getCategory(b.categoryId));
-  const meta = `${friendlyDate(b.date)} · ${esc(b.type === 'transfer' ? 'Umbuchung' : getCategory(b.categoryId))}${b.amountCents===0?' · Nullbuchung':''}`;
-  const tags=`<span class="booking-type-chip ${b.type}">${esc(kindName(b.type))}</span>${b.recurringRuleId?'<span class="booking-type-chip recurring">Wiederkehrend</span>':''}`;
-  const prefix = b.amountCents===0 ? '' : b.type === 'income' ? '+' : b.type === 'expense' ? '−' : '⇄ ';
-  const rows = [
-    `<div><dt>Art</dt><dd>${esc(kindName(b.type))}${b.amountCents===0?' · Nullbuchung (keine Saldoänderung)':''}</dd></div>`,
-    `<div><dt>Datum</dt><dd>${friendlyDate(b.date)}</dd></div>`,
-    `<div><dt>Quellkonto</dt><dd>${esc(getAccount(b.accountId))}</dd></div>`,
-    b.type === 'transfer' ? `<div><dt>Zielkonto</dt><dd>${esc(getAccount(b.otherAccountId!))}</dd></div>`
-      : `<div><dt>Kategorie</dt><dd>${esc(getCategory(b.categoryId))}</dd></div>`,
-    b.type !== 'transfer' && b.payeeId !== null ? `<div><dt>Empfänger / Zahler</dt><dd>${esc(getPayee(b.payeeId))}</dd></div>` : '',
-    b.note ? `<div class="booking-detail-note"><dt>Notiz</dt><dd>${esc(b.note)}</dd></div>` : ''
-  ].filter(Boolean).join('');
-  return `<article class="booking-entry ${expanded ? 'is-expanded' : ''}">
-    <button type="button" class="booking" data-action="toggle-booking" data-id="${b.id}" aria-expanded="${expanded}" aria-controls="booking-details-${b.id}">
-      <div class="info"><div class="booking-title">${esc(title)}</div><div class="booking-meta">${meta}</div><div class="booking-tags">${tags}</div></div>
-      <div class="booking-side"><div class="booking-amount ${b.type}">${prefix}${formatEuro(b.amountCents)}</div><span class="booking-chevron" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span></div>
-    </button>
-    ${expanded ? `<div class="booking-details" id="booking-details-${b.id}"><dl class="detail-grid">${rows}</dl>
-      <div class="btn-row booking-actions"><button type="button" class="btn secondary" data-action="clone-booking" data-id="${b.id}">Klonen</button>
-      <button type="button" class="btn primary" data-action="edit-booking" data-id="${b.id}">Bearbeiten</button>
-      <button type="button" class="btn danger" data-action="delete-booking" data-id="${b.id}">Löschen</button></div></div>` : ''}
-  </article>`;
+  const prefix = b.amountCents === 0 ? '' : b.type === 'income' ? '+' : b.type === 'expense' ? '−' : '⇄ ';
+  return bookingCardHtml({
+    id:b.id, source:'local', expanded, title,
+    dateLabel:friendlyDate(b.date),
+    categoryLabel:b.type === 'transfer' ? 'Umbuchung' : getCategory(b.categoryId),
+    kind:b.type, kindLabel:kindName(b.type), amountLabel:prefix+formatEuro(b.amountCents),
+    recurring:Boolean(b.recurringRuleId), zeroBooking:b.amountCents===0,
+    details:[
+      {label:'Art',value:kindName(b.type)+(b.amountCents===0?' · Nullbuchung (keine Saldoänderung)':'')},
+      {label:'Datum',value:friendlyDate(b.date)},
+      {label:'Quellkonto',value:getAccount(b.accountId)},
+      b.type==='transfer'?{label:'Zielkonto',value:getAccount(b.otherAccountId!)}
+        :{label:'Kategorie',value:getCategory(b.categoryId)},
+      ...(b.type!=='transfer'&&b.payeeId!==null?[{label:'Empfänger / Zahler',value:getPayee(b.payeeId)}]:[]),
+      ...(b.note?[{label:'Notiz',value:b.note,isNote:true}]:[])
+    ],
+    actions:[
+      {action:'clone-booking',title:'Klonen',style:'secondary'},
+      {action:'edit-booking',title:'Bearbeiten',style:'primary'},
+      {action:'delete-booking',title:'Löschen',style:'danger'}
+    ]
+  });
 }
 function homeBookings():Booking[]{return localSearchMatches(sortedLocalBookings(),homeBookingQuery);}
 function bookingsHtml(forHome=false): string {
@@ -393,22 +407,27 @@ function updateHomeResults():void{
 }
 function homeHtml(): string {
   const overall = [...calculateBalances(state,today()).values()].reduce((v,cents)=>v+cents,0);
-  const month = today().slice(0,7);
-  const monthly = state.bookings.filter(b=>b.date.startsWith(month));
-  const income = monthly.filter(b=>b.type==='income').reduce((v,b)=>v+b.amountCents,0);
-  const expense = monthly.filter(b=>b.type==='expense').reduce((v,b)=>v+b.amountCents,0);
+  const comparison=renderHomeComparison({
+    prefix:'local-home',filter:homeCompare,
+    accounts:state.accounts.map(a=>({id:a.id,name:a.name,currency:'EUR',decimals:2})),
+    categories:state.categories.map(c=>({id:c.id,name:c.name})),
+    bookings:state.bookings.map(b=>({date:b.date,kind:b.type,accountId:b.accountId,
+      categoryId:b.categoryId??0,amountMinor:b.amountCents})),
+    complete:true,defaultCurrency:'EUR',filtersOpen:homeFiltersOpen
+  });
   return `<section class="intro"><div><div class="eyebrow">Deine Finanzen im Blick</div><h1>Übersicht</h1><div class="muted small">Alle Daten lokal auf diesem Gerät</div></div><button class="btn primary" data-action="add-booking" ${!state.accounts.length?'disabled':''}>+ Buchung</button></section>
     <section class="card"><div class="section-title"><h2>Gesamtvermögen</h2><span class="muted">Alle Konten</span></div><div class="balance-total ${overall<0?'expense':''}">${formatEuro(overall)}</div></section>
     <details class="card account-disclosure" id="home-account-balances" ${homeBalancesOpen?'open':''}>
       <summary class="disclosure-toggle"><span><strong>Kontostände</strong><small>${state.accounts.length} Konten · Gesamt ${formatEuro(overall)}</small></span><span class="disclosure-chevron" aria-hidden="true">⌄</span></summary>
       <div class="disclosure-body"><div class="btn-row disclosure-tools"><button class="btn text" data-action="add-account">+ Konto</button><button class="btn secondary" data-action="reconcile-account">Kontostand abgleichen</button></div>${accountCards()}</div>
     </details>
-    <section class="card"><div class="section-title"><h2>Dieser Monat</h2><span class="muted">${esc(new Date().toLocaleDateString('de-DE',{month:'long',year:'numeric'}))}</span></div><div class="stats"><div><strong class="income">+${formatEuro(income)}</strong><span>Einnahmen</span></div><div><strong class="expense">−${formatEuro(expense)}</strong><span>Ausgaben</span></div></div></section>
+    ${comparison}
     <section class="card"><div class="section-title"><h2>Buchungen</h2><span class="muted small" id="home-booking-count">${homeBookings().length} Treffer</span></div>
       <div class="booking-quick-bar"><label class="field" for="home-booking-search">Buchungen durchsuchen
         <input id="home-booking-search" type="search" autocomplete="off" placeholder="Empfänger, Kategorie, Konto, Notiz, Betrag …" value="${esc(homeBookingQuery)}"></label></div>
       <div id="home-booking-results">${bookingsHtml(true)}</div></section>`;
 }
+
 function bookingsViewHtml(): string {
   const matches=filteredBookings();
   const totals=bookingTotals(matches);
@@ -507,7 +526,7 @@ function reportsHtml():string {
     <section class="card"><div class="section-title"><h2>Verlauf</h2><span class="muted">12 Monate bis ${esc(monthName(reportMonth))}</span></div>
       <div class="trend-legend"><span class="trend-income-mark">Einnahmen</span><span class="trend-expense-mark">Ausgaben</span></div>
       <div class="trend-list">${trend.map(t=>`<div class="trend-row"><span>${esc(monthName(t.month))}</span><div class="trend-bars">
-         <i class="trend-income" style="width:${Math.round(t.incomeCents/max*100)}%"></i><i class="trend-expense" style="width:${Math.round(t.expenseCents/max*100)}%"></i></div>
+         ${t.incomeCents>0?`<i class="trend-income" style="width:${Math.round(t.incomeCents/max*100)}%"></i>`:''}${t.expenseCents>0?`<i class="trend-expense" style="width:${Math.round(t.expenseCents/max*100)}%"></i>`:''}</div>
          <strong class="${t.incomeCents-t.expenseCents<0?'expense':'income'}">${formatEuro(t.incomeCents-t.expenseCents)}</strong></div>`).join('')}</div>
       <p class="muted small">Der Jahresverlauf enthält auch Monate ohne Buchungen. Die Beträge sind lokal berechnet.</p></section>`;
 }
@@ -544,23 +563,27 @@ function setupPayeePicker(dlg:HTMLDialogElement,prefix:'book'|'rule'):void {
   const payee=dlg.querySelector<HTMLInputElement>(`#${prefix}-payee`);
   const menu=dlg.querySelector<HTMLDivElement>(`#${prefix}-known-payees-menu`);
   if(!payee||!menu)return;
-  const lastUsed=lastPayeeUsage(state.bookings);
-  const recent=[...state.payees].sort((a,b)=>(lastUsed.get(b.id)??0)-(lastUsed.get(a.id)??0)||a.name.localeCompare(b.name,'de'));
-  const populate=()=>{
-    const needle=payee.value.trim().toLocaleLowerCase('de');
-    const matches=recent.filter(p=>p.name.toLocaleLowerCase('de').includes(needle)).slice(0,8);
+  const picker=attachDialogSuggestions(dlg,payee,menu);
+  const usage=lastPayeeUsage(state.bookings);
+  const populate=(showAll=false)=>{
+    const matches=rankSuggestions(state.payees,showAll?'':payee.value,8,usage);
     menu.innerHTML=matches.map(p=>`<button type="button" role="option" class="payee-suggestion" data-payee-id="${p.id}">${esc(p.name)}</button>`).join('');
-    menu.hidden=matches.length===0;
+    picker.open();
   };
-  payee.addEventListener('focus',populate);
-  payee.addEventListener('input',populate);
+  let modified=false;
+  payee.addEventListener('focus',()=>{modified=false;if(payee.value)payee.select();populate(true);});
+  payee.addEventListener('click',()=>{if(!modified&&payee.value)payee.select();populate(true);});
+  payee.addEventListener('input',()=>{modified=true;populate();});
+  payee.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&!menu.hidden){e.preventDefault();picker.close();}
+    if(e.key==='Enter'&&!menu.hidden){e.preventDefault();menu.querySelector<HTMLButtonElement>('[data-payee-id]')?.click();}
+  });
   menu.addEventListener('click',e=>{
     const button=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-payee-id]');
     if(!button)return;
     const p=state.payees.find(x=>x.id===Number(button.dataset.payeeId));
-    if(p){payee.value=p.name;menu.hidden=true;payee.focus();}
+    if(p){payee.value=p.name;modified=false;picker.close();payee.focus({preventScroll:true});}
   });
-  dlg.addEventListener('click',e=>{if(!(e.target as HTMLElement).closest('.payee-picker'))menu.hidden=true;});
 }
 function setupCategoryPicker(dlg:HTMLDialogElement,prefix:'book'|'rule'):void {
   const input=dlg.querySelector<HTMLInputElement>(`#${prefix}-category-search`);
@@ -570,24 +593,26 @@ function setupCategoryPicker(dlg:HTMLDialogElement,prefix:'book'|'rule'):void {
   const kind=input.closest<HTMLElement>('[data-category-kind]')?.dataset.categoryKind as CategoryKind;
   const usage=new Map<number,number>();
   for(const b of state.bookings)if(b.categoryId!==null)usage.set(b.categoryId,(usage.get(b.categoryId)??0)+1);
+  const picker=attachDialogSuggestions(dlg,input,menu);
   let focusedIndex=-1;
-  const close=()=>{menu.hidden=true;input.setAttribute('aria-expanded','false');focusedIndex=-1;};
-  const populate=()=>{
+  const close=()=>{picker.close();focusedIndex=-1;};
+  const populate=(showAll=false)=>{
     const query=input.value.trim();
-    const suggestions=categorySuggestions(state.categories,kind,query,usage,8);
+    const suggestions=categorySuggestions(state.categories,kind,showAll?'':query,usage,8);
     const exact=state.categories.some(c=>c.kind===kind&&c.name.toLocaleLowerCase('de')===query.toLocaleLowerCase('de'));
     menu.innerHTML=suggestions.map(c=>`<button type="button" role="option" class="category-suggestion" data-category-id="${c.id}">${esc(c.name)}<small>${usage.get(c.id)??0} Buchungen</small></button>`).join('')+
       (query.length>0&&query.length<=100&&!exact?`<button type="button" class="category-suggestion category-create" data-category-create="1">+ Neue Kategorie „${esc(query)}“ anlegen</button>`:'');
-    menu.hidden=!menu.children.length;
-    input.setAttribute('aria-expanded',String(!menu.hidden));focusedIndex=-1;
+    picker.open();focusedIndex=-1;
   };
   const choose=(id:number)=>{
     const c=state.categories.find(x=>x.id===id&&x.kind===kind);
     if(!c)return;
     selected.value=String(c.id);input.value=c.name;input.focus();close();
   };
-  input.addEventListener('focus',populate);
-  input.addEventListener('input',()=>{selected.value='';populate();});
+  let modified=false;
+  input.addEventListener('focus',()=>{modified=false;if(selected.value&&input.value)input.select();populate(true);});
+  input.addEventListener('click',()=>{if(!modified&&selected.value&&input.value)input.select();populate(true);});
+  input.addEventListener('input',()=>{modified=true;selected.value='';populate();});
   input.addEventListener('keydown',e=>{
     if(e.key==='Escape'){if(!menu.hidden){e.stopPropagation();e.preventDefault();close();}return;}
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){
@@ -977,6 +1002,45 @@ async function connectedServerClient():Promise<DashboardClient> {
     throw new Error('Geräteschlüssel und Serveradresse stimmen nicht überein. Bitte lokal umschalten und neu anmelden.');
   return new DashboardClient(stored.server,stored.token);
 }
+
+let homeMonthlySerial=0,historyMonthlySerial=0;
+/** Read-only server totals; never use paged bookings as a numerical fallback. */
+async function loadMonthlyFor(which:'home'|'history'):Promise<void>{
+  if(!serverMode)return;
+  const serial=which==='home'?++homeMonthlySerial:++historyMonthlySerial;
+  const server=remote.server;
+  const isHome=which==='home';
+  const filter=isHome?remote.homeCompare:remote.historyFilter;
+  if(isHome){remote.homeMonthly=null;remote.homeMonthlyError='';remote.homeMonthlyLoading=false;}
+  else{remote.historyMonthly=null;remote.historyMonthlyError='';remote.historyMonthlyLoading=false;}
+  if(remote.monthlySupported!==true){render();return;}
+  if(isHome)remote.homeMonthlyLoading=true;
+  else remote.historyMonthlyLoading=true;
+  render();
+  try{
+    const bounds=historyBounds(filter);
+    const selectedAccount=filter.account==='all'?undefined:Number(filter.account);
+    const selectedCategory=filter.category==='all'?undefined:Number(filter.category);
+    const client=await connectedServerClient();
+    const report=await client.monthlyReports({from:bounds.from,to:bounds.to,currency:filter.currency,
+      accountId:selectedAccount,categoryId:selectedCategory});
+    if(!serverMode||remote.server!==server||(isHome?serial!==homeMonthlySerial:serial!==historyMonthlySerial))return;
+    if(isHome)remote.homeMonthly=report;
+    else remote.historyMonthly=report;
+  }catch(error){
+    if(!serverMode||remote.server!==server||(isHome?serial!==homeMonthlySerial:serial!==historyMonthlySerial))return;
+    const message=error instanceof Error?error.message:'Monatsauswertung ist momentan nicht verfügbar.';
+    if(isHome)remote.homeMonthlyError=message;
+    else remote.historyMonthlyError=message;
+  }finally{
+    if(serverMode&&remote.server===server&&(isHome?serial===homeMonthlySerial:serial===historyMonthlySerial)){
+      if(isHome)remote.homeMonthlyLoading=false;
+      else remote.historyMonthlyLoading=false;
+      render();
+    }
+  }
+}
+
 async function loadRemoteServer(preservePages=false):Promise<void>{
   if(!serverMode||serverLoadBusy)return;
   serverLoadBusy=true;
@@ -988,9 +1052,16 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     if(!(await client.capabilities()))throw new Error('Dashboard-Mobile-API v1 ist nicht bestätigt.');
     const session=await client.session();
     remote.session=session; // Authenticated; a faulty booking row must not masquerade as bad credentials.
-    const [accounts,categories,payees,first]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings()]);
+    const [accounts,categories,payees,first,monthlySupported,reconciliationSupported]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings(),client.monthlyReportsSupported().catch(()=>false),client.reconciliationSupported().catch(()=>false)]);
     const pending=parsePending((await secure.getPending()).json);
-    remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize};
+    remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,expandedBookingId:null,
+      monthlySupported,reconciliationSupported,homeMonthly:null,historyMonthly:null,homeMonthlyError:'',historyMonthlyError:''};
+    if(!accounts.some(a=>a.currency===remote.reportCurrencyFilter))
+      remote.reportCurrencyFilter=accounts[0]?.currency??'EUR';
+    if(!accounts.some(a=>a.currency===remote.homeCompare.currency))
+      remote.homeCompare.currency=accounts[0]?.currency??'EUR';
+    if(!accounts.some(a=>a.currency===remote.historyFilter.currency))
+      remote.historyFilter.currency=accounts[0]?.currency??'EUR';
     // This optional flag currently only specifies the future pagination policy.
     void preservePages;
   }catch(error){
@@ -999,13 +1070,29 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     // Keep the authenticated session on data validation errors, never show local data.
     if(error instanceof DashboardApiError && (error.status===401||error.status===403))remote.session=null;
     remote.loading=false;
-  }finally{serverLoadBusy=false;render();}
+  }finally{serverLoadBusy=false;render();if(serverMode&&remote.monthlySupported===true)void loadMonthlyFor(view==='reports'?'history':'home');}
+}
+async function loadMoreRemoteHistory():Promise<void>{
+  if(!serverMode||serverLoadBusy||!remote.nextBefore)return;
+  serverLoadBusy=true;remote.loading=true;remote.error='';render();
+  try{
+    const client=await connectedServerClient();
+    // Only three additional API pages per explicit tap, never a silent full-ledger download.
+    for(let i=0;i<3&&remote.nextBefore;i++){
+      const before:string=remote.nextBefore!;
+      const page=await client.bookings(before);
+      if(page.nextBefore===before)throw new Error('Wiederholter API-Seitenzeiger.');
+      const seen=new Set(remote.bookings.map(b=>b.id));
+      remote.bookings.push(...page.items.filter(b=>!seen.has(b.id)));
+      remote.nextBefore=page.nextBefore;
+    }
+  }catch(error){remote.error=error instanceof Error?error.message:'Historische Buchungen konnten nicht geladen werden.';}
+  finally{serverLoadBusy=false;remote.loading=false;render();}
 }
 async function loadMoreRemote(forHome=false):Promise<void>{
   if(!serverMode||serverLoadBusy)return;
   const desired=(forHome?remote.homeVisibleCount:remote.visibleCount)+readBookingList().pageSize;
-  const query=forHome?remote.searchHome:remote.searchBookings;
-  const matches=()=>filterRemoteBookings(remote.bookings,query,remote.accounts,remote.categories).length;
+  const matches=()=>displayedServerBookings(remote,forHome?'home':'bookings').length;
   if(matches()>=desired||!remote.nextBefore){
     if(forHome)remote.homeVisibleCount=desired;else remote.visibleCount=desired;
     render();return;
@@ -1027,6 +1114,29 @@ async function loadMoreRemote(forHome=false):Promise<void>{
   }catch(error){remote.error=error instanceof Error?error.message:'Weitere Buchungen konnten nicht geladen werden.';}
   finally{remote.loading=false;serverLoadBusy=false;render();}
 }
+/** Fetch remote rules only when the server advertises the complete recurring API.
+ * No local recurring rule is ever used as a fallback. */
+async function loadRemoteRecurring():Promise<void>{
+  if(!serverMode||remote.recurringLoading)return;
+  remote.recurringLoading=true;remote.recurringError='';render();
+  try{
+    remote.pending=parsePending((await secureSession().getPending()).json);
+    const client=await connectedServerClient();
+    const supported=await client.recurringSupported();
+    remote.recurringSupported=supported;
+    if(!supported){
+      remote.recurringLoaded=false;remote.recurringRules=[];
+      return;
+    }
+    const rules=await client.recurringRules();
+    remote.recurringRules=rules;
+    remote.recurringLoaded=true;remote.recurringError='';
+  }catch(error){
+    remote.recurringLoaded=false;
+    remote.recurringRules=[];
+    remote.recurringError=error instanceof Error?error.message:'Serverregeln konnten nicht geladen werden.';
+  }finally{remote.recurringLoading=false;render();}
+}
 /** Server account preference is device-only, per server URL, never sent to the API. */
 function remoteDefaultAccount():number|null{
   try {const raw=localStorage.getItem('fielanzen-server-default:'+remote.server);const id=Number(raw);return raw&&remote.accounts.some(a=>a.id===id&&a.active)?id:null;}
@@ -1036,31 +1146,39 @@ function remotePicker(dlg:HTMLDialogElement, id:string, menuId:string, items:()=
   const field=dlg.querySelector<HTMLInputElement>('#'+id)!;
   const menu=dlg.querySelector<HTMLDivElement>('#'+menuId)!;
   const hidden=category?dlg.querySelector<HTMLInputElement>('#srv-category'):null;
-  const close=()=>{menu.hidden=true;field.setAttribute('aria-expanded','false');};
-  const renderMatches=()=>{
-    const q=field.value.trim().toLocaleLowerCase('de');
-    const filtered=items().filter(x=>x.name.toLocaleLowerCase('de').includes(q)).slice(0,7);
-    menu.innerHTML=filtered.map(x=>`<button type="button" class="category-suggestion" data-remote-choice="${x.id}">${esc(x.name)}</button>`).join('');
-    menu.hidden=!filtered.length;
-    field.setAttribute('aria-expanded',String(!menu.hidden));
-    if(filtered.length)requestAnimationFrame(()=>field.scrollIntoView({block:'center',behavior:'instant'}));
+  const picker=attachDialogSuggestions(dlg,field,menu);
+  const close=()=>picker.close();
+  // Suggest recently used values first, rather than an alphabetical list starting at A.
+  // Only remote API data are used; no local ledger is read in server mode.
+  const usage=new Map<number,number>();
+  const payeesByName=new Map(remote.payees.map(p=>[suggestionKey(p.name),p.id]));
+  for(const booking of remote.bookings){
+    const itemId=category?(booking.categoryId??0):(payeesByName.get(suggestionKey(booking.payeeTitle??''))??0);
+    if(itemId)usage.set(itemId,(usage.get(itemId)??0)+1);
+  }
+  const renderMatches=(showAll=false)=>{
+    const query=showAll?'':field.value;
+    const filtered=rankSuggestions(items(),query,7,usage);
+    menu.innerHTML=filtered.map(x=>`<button type="button" role="option" class="category-suggestion" data-remote-choice="${x.id}">${esc(x.name)}</button>`).join('');
+    picker.open();
   };
-  field.addEventListener('focus',renderMatches);
-  field.addEventListener('input',()=>{if(hidden)hidden.value='';renderMatches();});
+  let modified=false;
+  field.addEventListener('focus',()=>{modified=false;if(field.value)field.select();renderMatches(true);});
+  field.addEventListener('click',()=>{if(!modified&&field.value)field.select();renderMatches(true);});
+  field.addEventListener('input',()=>{modified=true;if(hidden)hidden.value='';renderMatches();});
   field.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){close();return;}
+    if(e.key==='Escape'&&!menu.hidden){e.preventDefault();close();return;}
     if(e.key==='Enter'&&!menu.hidden){
-      const first=menu.querySelector<HTMLButtonElement>('[data-remote-choice]');
-      if(first){e.preventDefault();first.click();}
+      e.preventDefault();
+      menu.querySelector<HTMLButtonElement>('[data-remote-choice]')?.click();
     }
   });
   menu.addEventListener('click',e=>{
     const btn=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-remote-choice]');
     if(!btn)return;
     const row=items().find(x=>x.id===Number(btn.dataset.remoteChoice));
-    if(row){field.value=row.name;if(hidden)hidden.value=String(row.id);close();field.blur();}
+    if(row){field.value=row.name;if(hidden)hidden.value=String(row.id);modified=false;close();field.focus({preventScroll:true});}
   });
-  dlg.addEventListener('click',e=>{if(!(e.target as HTMLElement).closest('.server-search-field'))close();});
 }
 function serverCreateDialog(booking?:RemoteBooking):void{
   if(!serverMode||!remote.session?.canWrite||remote.pending||serverWriteBusy){remote.error='Der Server erlaubt gerade keine neue Schreiboperation.';render();return;}
@@ -1129,6 +1247,186 @@ function serverCreateDialog(booking?:RemoteBooking):void{
   })();});
   dlg.showModal();
 }
+/** Server-only rule editor. Never call showDialog(): that helper reloads local SQLite on submit. */
+function serverRecurringDialog(rule?:ServerRecurringRule):void{
+  if(!serverMode||!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||
+     remote.pending||serverWriteBusy||remote.recurringLoading){
+    remote.recurringError='Regeländerungen sind im Servermodus momentan nicht möglich.';render();return;
+  }
+  const selected=remote.accounts.find(a=>a.id===rule?.accountId)??remote.accounts.find(a=>a.id===remoteDefaultAccount())??remote.accounts.find(a=>a.active);
+  if(!selected){remote.recurringError='Kein aktives Serverkonto vorhanden.';render();return;}
+  const choice=(value:string,current:string):string=>value===current?'selected':'';
+  const form=`<p class="muted small">Diese Regel wird ausschließlich auf dem Dashboard-Server gespeichert. Neue und bearbeitete Regeln werden zunächst pausiert und müssen anschließend bewusst aktiviert werden.</p>
+    <label class="field">Regelname<input id="srv-rec-title" maxlength="160" required value="${esc(rule?.title??'')}" placeholder="z. B. Miete"></label>
+    <div class="form-grid"><label class="field">Buchungsart<select id="srv-rec-kind">
+      <option value="expense" ${choice('expense',rule?.kind??'expense')}>Ausgabe</option>
+      <option value="income" ${choice('income',rule?.kind??'expense')}>Einnahme</option>
+      <option value="transfer" ${choice('transfer',rule?.kind??'expense')}>Umbuchung</option></select></label>
+      <label class="field">Betrag (${esc(selected.currency)})<input id="srv-rec-amount" inputmode="decimal" required
+        value="${rule?esc(String(rule.amountMinor/10**selected.decimals).replace('.',',')):''}" placeholder="0,00"></label></div>
+    <div class="form-grid"><label class="field">Quellkonto<select id="srv-rec-account">${remote.accounts.filter(a=>a.active).map(a=>option(a.id,a.name,rule?.accountId??selected.id)).join('')}</select></label>
+      <label class="field" id="srv-rec-target-group">Zielkonto<select id="srv-rec-target"><option value="0">– Kein Zielkonto –</option>
+        ${remote.accounts.filter(a=>a.active).map(a=>option(a.id,a.name,rule?.toAccountId)).join('')}</select></label></div>
+    <div class="field server-search-field" id="srv-rec-category-group"><label for="srv-category-search">Kategorie</label>
+      <div class="category-picker"><input id="srv-category-search" class="category-query" type="search" autocomplete="off" placeholder="Kategorie suchen" aria-expanded="false"
+        value="${esc(remote.categories.find(c=>c.id===rule?.categoryId)?.name??'')}">
+        <input type="hidden" id="srv-category" value="${rule?.categoryId??0}"><div id="srv-category-menu" class="category-menu" hidden></div></div></div>
+    <div class="field server-search-field" id="srv-rec-payee-group"><label for="srv-payee">Empfänger / Zahler</label>
+      <div class="payee-picker"><input id="srv-payee" maxlength="100" value="${esc(rule?.payeeTitle??'')}" placeholder="Empfänger suchen oder neu eintragen" autocomplete="off">
+        <div id="srv-payee-menu" class="payee-menu" hidden></div></div></div>
+    <div class="form-grid"><label class="field">Startdatum<input type="date" id="srv-rec-start" required value="${esc(rule?.startOn??today())}"></label>
+      <label class="field">Ausführen ab<input type="time" id="srv-rec-time" required value="${esc(rule?.runAt??'00:00')}"></label></div>
+    <div class="form-grid"><label class="field">Wiederholung<select id="srv-rec-frequency">
+      <option value="daily" ${choice('daily',rule?.frequency??'monthly')}>Täglich</option>
+      <option value="weekly" ${choice('weekly',rule?.frequency??'monthly')}>Wöchentlich</option>
+      <option value="monthly" ${choice('monthly',rule?.frequency??'monthly')}>Monatlich</option>
+      <option value="quarterly" ${choice('quarterly',rule?.frequency??'monthly')}>Vierteljährlich</option>
+      <option value="yearly" ${choice('yearly',rule?.frequency??'monthly')}>Jährlich</option></select></label>
+      <label class="field">Alle wie viele Intervalle?<input type="number" id="srv-rec-interval" required min="1" max="120" value="${rule?.intervalCount??1}"></label></div>
+    <div class="form-grid"><label class="field" id="srv-rec-monthday-group">Tag im Monat (1–31)
+      <input type="number" id="srv-rec-monthday" required min="1" max="31" value="${rule?.dayOfMonth??Number(today().slice(-2))}"></label>
+      <label class="field">Enddatum (optional)<input type="date" id="srv-rec-end" value="${esc(rule?.endOn??'')}"></label></div>
+    <label class="field">Maximal so oft ausführen (optional)<input id="srv-rec-max" type="number" min="1" max="10000" value="${rule?.maxOccurrences??''}" placeholder="Unbegrenzt"></label>
+    <label class="field">Notiz<textarea id="srv-rec-note" maxlength="1000">${esc(rule?.note??'')}</textarea></label>
+    ${rule?`<p class="notice">Beim Bearbeiten wird der Ausführungsmodus auf „Pausiert“ zurückgesetzt. Bereits gebuchte Umsätze und Ausführungen bleiben erhalten.</p>`:''}`;
+  const dlg=document.createElement('dialog');
+  dlg.innerHTML=`<div class="modal-head"><h2>${rule?'Serverregel bearbeiten':'Neue Serverregel'}</h2>
+    <button type="button" class="btn text close-modal" aria-label="Schließen">✕</button></div>
+    <form class="modal-body"><div id="dialog-error" role="alert"></div>${form}
+      <div class="modal-actions"><button type="button" class="btn secondary close-modal">Abbrechen</button>
+        <button type="submit" class="btn primary">${rule?'Regel speichern (pausiert)':'Regel anlegen (pausiert)'}</button></div>
+    </form>`;
+  document.body.appendChild(dlg);
+  dlg.querySelectorAll('.close-modal').forEach(b=>b.addEventListener('click',()=>dlg.close()));
+  dlg.addEventListener('close',()=>dlg.remove());
+  const kind=dlg.querySelector<HTMLSelectElement>('#srv-rec-kind')!;
+  const target=dlg.querySelector<HTMLSelectElement>('#srv-rec-target')!;
+  const category=dlg.querySelector<HTMLInputElement>('#srv-category')!;
+  const categoryQuery=dlg.querySelector<HTMLInputElement>('#srv-category-search')!;
+  const frequency=dlg.querySelector<HTMLSelectElement>('#srv-rec-frequency')!;
+  const monthday=dlg.querySelector<HTMLInputElement>('#srv-rec-monthday')!;
+  const start=dlg.querySelector<HTMLInputElement>('#srv-rec-start')!;
+  remotePicker(dlg,'srv-category-search','srv-category-menu',
+    ()=>remote.categories.filter(c=>c.kind===kind.value).map(c=>({id:c.id,name:c.name})),true);
+  remotePicker(dlg,'srv-payee','srv-payee-menu',()=>remote.payees.map(p=>({id:p.id,name:p.name})));
+  const sync=()=>{
+    dlg.querySelector<HTMLElement>('#srv-rec-target-group')!.classList.toggle('hide',kind.value!=='transfer');
+    target.disabled=kind.value!=='transfer';
+    dlg.querySelector<HTMLElement>('#srv-rec-category-group')!.classList.toggle('hide',kind.value==='transfer');
+    dlg.querySelector<HTMLElement>('#srv-rec-payee-group')!.classList.toggle('hide',kind.value==='transfer');
+    dlg.querySelector<HTMLElement>('#srv-rec-monthday-group')!.classList.toggle('hide',frequency.value==='daily'||frequency.value==='weekly');
+    if(kind.value!=='transfer'&&!remote.categories.some(c=>c.id===Number(category.value)&&c.kind===kind.value)){
+      category.value='0';categoryQuery.value='';
+    }
+  };
+  kind.addEventListener('change',sync);frequency.addEventListener('change',sync);sync();
+  let dayManual=Boolean(rule);
+  monthday.addEventListener('input',()=>{dayManual=true;});
+  start.addEventListener('change',()=>{if(!dayManual)monthday.value=String(Number(start.value.slice(-2))||1);});
+  dlg.querySelector('form')!.addEventListener('submit',e=>{e.preventDefault();void (async()=>{
+    const button=dlg.querySelector<HTMLButtonElement>('button[type="submit"]')!;button.disabled=true;
+    try{
+      const val=(id:string)=>dlg.querySelector<HTMLInputElement>('#'+id)!.value.trim();
+      const kindValue=kind.value as ServerRecurringDraft['kind'];
+      const accountId=Number(val('srv-rec-account'));
+      const account=remote.accounts.find(a=>a.id===accountId);
+      if(!account)throw new Error('Quellkonto unbekannt.');
+      const amountText=val('srv-rec-amount').replace(/\s/g,'').replace(',','.');
+      const decimals=account.decimals;
+      const valid=decimals===0?/^\d+$/:new RegExp('^\\d+(?:\\.\\d{1,'+decimals+'})?$');
+      if(!valid.test(amountText))throw new Error('Ungültiger Betrag. Maximal '+decimals+' Nachkommastellen.');
+      const [whole,fract='']=amountText.split('.');
+      const amount=Number(whole)*10**decimals+Number(fract.padEnd(decimals,'0'));
+      if(kindValue!=='transfer'&&categoryQuery.value.trim()&&!Number(category.value))
+        throw new Error('Kategorie bitte aus der Vorschlagsliste auswählen.');
+      const draft=validateServerRecurringDraft({
+        title:val('srv-rec-title'),kind:kindValue,account_id:accountId,
+        to_account_id:kindValue==='transfer'?Number(target.value):0,
+        category_id:kindValue==='transfer'?0:Number(category.value),
+        payee_title:kindValue==='transfer'?'':val('srv-payee'),amount_minor:amount,
+        note:val('srv-rec-note'),frequency:frequency.value as ServerRecurringFrequency,
+        interval_count:Number(val('srv-rec-interval')),day_of_month:Number(val('srv-rec-monthday')),
+        start_on:val('srv-rec-start'),run_at:val('srv-rec-time'),
+        end_on:val('srv-rec-end')||null,max_occurrences:val('srv-rec-max')?Number(val('srv-rec-max')):null
+      },remote.accounts,remote.categories);
+      await issueServerWrite(createRecurringPendingWrite(remote.server,rule?'update':'create',
+        rule?.id??null,draft,rule?.revision));
+      dlg.close();
+    }catch(error){
+      const errorNode=dlg.querySelector<HTMLElement>('#dialog-error')!;
+      errorNode.className='error';errorNode.textContent=error instanceof Error?error.message:String(error);
+    }finally{button.disabled=false;}
+  })();});
+  dlg.showModal();
+}
+
+/** A separate financial operation. An uncertain reply retains the exact encrypted
+ * account / JSON / UUID and can ONLY be retried explicitly with that same payload.
+ * Never pass a reconciliation through the regular booking creation endpoint. */
+async function issueServerReconciliation(request:PendingWrite,repeat=false):Promise<ReconciliationResult>{
+  if(!serverMode||serverWriteBusy||serverLoadBusy)throw new Error('Server-Abgleich gerade nicht möglich.');
+  if(!canReconcile(remote.session,remote.reconciliationSupported))
+    throw new Error('Schreibrecht, Web-Verwaltung oder Kontostandsabgleich-Capability fehlt.');
+  if(!isReconciliationPending(request))throw new Error('Kein gültiger Kontostandsabgleich.');
+  if(repeat){
+    if(!remote.pending||JSON.stringify(remote.pending)!==JSON.stringify(request))
+      throw new Error('Nur der exakt gespeicherte Abgleich darf erneut gesendet werden.');
+  }else if(remote.pending)throw new Error('Ein früherer Schreibauftrag ist noch ungeklärt.');
+  const id=Number(request.path.match(/\/accounts\/(\d+)\/reconcile$/)?.[1]);
+  if(!Number.isSafeInteger(id)||id<=0)throw new Error('Ungültige Konto-ID im Abgleich.');
+  const payload=request.data as {actual_balance_minor:number;expected_balance_minor:number;note:string};
+  serverWriteBusy=true;
+  const secure=secureSession();
+  let result:ReconciliationResult;
+  try{
+    if(!repeat){
+      await secure.putPending({json:JSON.stringify(request)});
+      remote.pending=request;
+    }
+    const client=await connectedServerClient();
+    result=parseReconciliationResult(await client.write(request),id);
+    if(result.actualBalanceMinor!==payload.actual_balance_minor ||
+       result.previousBalanceMinor!==payload.expected_balance_minor)
+      throw new Error('Der Server hat andere Kontostände als im bestätigten Abgleich zurückgegeben. Auftrag prüfen.');
+    await secure.clearPending();
+    remote.pending=null;
+  }catch(error){
+    if(error instanceof DashboardApiError&&[400,401,403,404,409].includes(error.status)){
+      // The server explicitly rejected this UUID. A future corrected request is
+      // permitted only after the user has reviewed fresh authoritative balances.
+      await secure.clearPending();
+      remote.pending=null;
+    }
+    remote.error=error instanceof Error?error.message:'Abgleich nicht bestätigt.';
+    if(remote.pending)remote.error+=' Antwort unklar: denselben offenen Auftrag mit derselben UUID wiederholen; keinen neuen Abgleich erstellen.';
+    render();
+    throw error;
+  }finally{serverWriteBusy=false;}
+  message=result.unchanged?'Kontostand bereits korrekt – keine Korrekturbuchung angelegt.':
+    'Server-Kontostand abgeglichen: '+formatMinor(result.changeMinor,remote.accounts.find(a=>a.id===id))+
+    ' Differenz als Korrekturbuchung gespeichert.';
+  remote.error='';
+  try{
+    const client=await connectedServerClient();
+    // Only server data are refreshed. Never read or write local finance storage here.
+    const [accounts,page]=await Promise.all([client.accounts(),client.bookings()]);
+    remote.accounts=accounts;
+    remote.bookings=page.items;
+    remote.nextBefore=page.nextBefore;
+    remote.homeMonthly=null;remote.historyMonthly=null;
+    // Refresh aggregated totals from the server; never derive full months from pages.
+    if(remote.monthlySupported===true){
+      await loadMonthlyFor('home');
+      if(view==='reports')await loadMonthlyFor('history');
+    }
+  }catch(error){
+    message+=' Die Speicherung wurde bestätigt; die Serveransicht bitte manuell aktualisieren: '+
+      (error instanceof Error?error.message:String(error));
+  }
+  render();
+  return result;
+}
+
 async function issueServerWrite(request:PendingWrite,repeat=false):Promise<void>{
   if(!serverMode||serverWriteBusy)throw new Error('Server-Schreiboperation nicht möglich.');
   if(!remote.session?.canWrite)throw new Error('Dashboard verweigert Schreibzugriff; bestehende Benutzerrechte werden respektiert.');
@@ -1140,8 +1438,10 @@ async function issueServerWrite(request:PendingWrite,repeat=false):Promise<void>
     if(!repeat){await secure.putPending({json:JSON.stringify(request)});remote.pending=request;}
     await (await connectedServerClient()).write(request);
     await secure.clearPending();remote.pending=null;
-    message='Serverbuchung bestätigt. Konten und Buchungen werden neu geladen.';
+    const recurringWrite=request.path.startsWith('/api/mobile/v1/recurring');
+    message=recurringWrite?'Serverregel bestätigt. Die Serveransichten werden aktualisiert.':'Serverbuchung bestätigt. Konten und Buchungen werden neu geladen.';
     await loadRemoteServer();
+    if(recurringWrite)await loadRemoteRecurring();
   }catch(error){
     // An unknown network outcome is NOT retried with a new UUID automatically.
     remote.error=error instanceof Error?error.message:'Serveroperation nicht bestätigt.';
@@ -1197,6 +1497,7 @@ async function activateStagedDashboard():Promise<void>{
   // Disable only local background executions, never change local finance data.
   if(runningNatively())try{await nativeBackup().configure({...state.settings.autoBackup??defaultAutoBackup(),enabled:false});}catch{/* show later in local mode */}
   render();
+  void loadRemoteServer();
 }
 async function resumeServerSession():Promise<void>{
   const secure=secureSession();const credentials=await secure.getToken();
@@ -1265,8 +1566,11 @@ function render(): void {
       <span><strong>${serverMode?'AKTIV: DASHBOARD-SERVER':'AKTIV: LOKAL'}</strong><small>${serverMode?` · ${esc(remote.server)} · Buchungen nur auf dem Server`:' · Buchungen nur auf diesem Gerät'}</small></span>
       ${serverMode?'<button type="button" class="btn secondary" data-action="server-switch-local">Zu Lokal wechseln</button>':''}
     </div>
-    <main class="wrap" id="content" tabindex="-1">${message?`<div class="error" role="alert">${esc(message)}</div>`:''}${serverMode?(view==='settings'?serverSettingsHtml(remote)+appLockSettingsHtml()+licenseSettingsHtml():serverPageHtml(remote,view==='bookings'?'bookings':view==='reports'?'reports':view==='recurring'?'recurring':'home')):(view==='home'?homeHtml():view==='bookings'?bookingsViewHtml():view==='recurring'?recurringHtml():view==='reports'?reportsHtml():view==='import-audits'?importAuditsHtml():view==='data-check'?dataCheckHtml():settingsHtml())}</main>
-    <nav class="nav" aria-label="Hauptnavigation"><button data-action="go-home" class="${view==='home'?'active':''}"><span class="nav-icon">⌂</span>Übersicht</button><button data-action="go-bookings" class="${view==='bookings'?'active':''}"><span class="nav-icon">▤</span>Buchungen</button><button data-action="go-recurring" class="${view==='recurring'?'active':''}"><span class="nav-icon">↻</span>Regeln</button><button data-action="go-reports" class="${view==='reports'?'active':''}"><span class="nav-icon">▥</span>Monat</button><button data-action="go-settings" class="${view==='settings'||view==='import-audits'||view==='data-check'?'active':''}"><span class="nav-icon">⚙</span>Mehr</button></nav>`;
+    <main class="wrap" id="content" tabindex="-1">${message?`<div class="error" role="alert">${esc(message)}</div>`:''}${serverMode?(view==='settings'?serverSettingsHtml(remote)+appLockSettingsHtml()+licenseSettingsHtml():serverPageHtml(remote,view==='bookings'?'bookings':view==='reports'?'reports':view==='recurring'?'recurring':'home')):(view==='home'?homeHtml():view==='bookings'?bookingsViewHtml():view==='recurring'?recurringHtml():view==='reports'?renderHistory({prefix:'local-history',filter:historyFilter,
+  accounts:state.accounts.map(a=>({id:a.id,name:a.name,currency:'EUR'})),
+  categories:state.categories,report:localHistoryReport(state,historyFilter,today()),
+  filtersOpen:historyFiltersOpen,local:true}):view==='import-audits'?importAuditsHtml():view==='data-check'?dataCheckHtml():settingsHtml())}</main>
+    <nav class="nav" aria-label="Hauptnavigation"><button data-action="go-home" class="${view==='home'?'active':''}"><span class="nav-icon">⌂</span>Übersicht</button><button data-action="go-bookings" class="${view==='bookings'?'active':''}"><span class="nav-icon">▤</span>Buchungen</button><button data-action="go-recurring" class="${view==='recurring'?'active':''}"><span class="nav-icon">↻</span>Regeln</button><button data-action="go-reports" class="${view==='reports'?'active':''}"><span class="nav-icon">▥</span>Historie</button><button data-action="go-settings" class="${view==='settings'||view==='import-audits'||view==='data-check'?'active':''}"><span class="nav-icon">⚙</span>Mehr</button></nav>`;
   const logo = document.querySelector<HTMLImageElement>('.wolf-logo');
   if (logo) {
     const fallback = () => { logo.hidden = true; };
@@ -1327,6 +1631,140 @@ function addCategory(): void {
       await storage.addCategory(txt('cat-name'),txt('cat-kind') as CategoryKind);
   });
 }
+/** Same controls and visual structure as the existing LOCAL dialog.
+ * The local reconcileAccountDialog implementation below is not modified. */
+function serverReconcileDialog(accountId?:number):void{
+  if(!serverMode||!canReconcile(remote.session,remote.reconciliationSupported)||
+     remote.pending||serverWriteBusy||serverLoadBusy){
+    remote.error='Direkter Abgleich nicht verfügbar: Schreibrecht, Server-Capability oder freier Schreibstatus fehlt.';
+    render();return;
+  }
+  const eligible=remote.accounts.filter(a=>a.active&&a.decimals>=0&&a.decimals<=3&&Number.isSafeInteger(a.balanceMinor));
+  if(!eligible.length){remote.error='Keine aktiven Serverkonten mit gültigem Ist-Kontostand verfügbar.';render();return;}
+  const first=eligible.find(a=>a.id===accountId)??eligible.find(a=>a.id===remoteDefaultAccount())??eligible[0]!;
+  // Immutable server-read snapshots, never local SQLite or projected balances.
+  const observed=new Map(eligible.map(a=>[a.id,a]));
+  let needsReconfirmation=false;
+  let submitting=false;
+  const dlg=document.createElement('dialog');
+  dlg.innerHTML=`<div class="modal-head"><h2>Kontostand abgleichen</h2>
+      <button type="button" class="btn text close-modal" aria-label="Schließen">✕</button></div>
+    <form class="modal-body" novalidate><div id="dialog-error" role="alert"></div>
+      <p class="muted small">Die Differenz wird nur als Vorschau angezeigt. Der Dashboard-Server prüft den Ist-Saldo und speichert gegebenenfalls eine eigene nachvollziehbare Korrekturbuchung. Die lokalen Finanzdaten bleiben unverändert.</p>
+      <label class="field">Konto<select id="reconcile-account">${eligible.map(a=>option(a.id,a.name,first.id)).join('')}</select></label>
+      <p class="muted small" id="reconcile-current">Aktuell: ${esc(formatMinor(first.balanceMinor,first))}</p>
+      <p class="muted small" id="reconcile-projected">Prognose inkl. künftiger Buchungen: ${esc(formatMinor(first.projectedBalanceMinor,first))}</p>
+      <label class="field">Tatsächlicher Kontostand (${esc(first.currency)})<input id="reconcile-target" data-select-on-focus required inputmode="decimal" value="${esc(formatReconciliationInput(first.balanceMinor,first.decimals))}"></label>
+      <label class="field">Notiz (optional)<input id="reconcile-note" maxlength="500" value="Kontostand abgeglichen" placeholder="z. B. Bankabgleich"></label>
+      <p class="muted small" id="reconcile-delta">Differenz: ${esc(formatMinor(0,first))} (Vorschau)</p>
+      <div class="modal-actions"><button type="button" class="btn close-modal">Abbrechen</button>
+        <button type="submit" class="btn primary">Abgleich speichern</button></div></form>`;
+  document.body.appendChild(dlg);
+  const accountSelect=dlg.querySelector<HTMLSelectElement>('#reconcile-account')!;
+  const input=dlg.querySelector<HTMLInputElement>('#reconcile-target')!;
+  const note=dlg.querySelector<HTMLInputElement>('#reconcile-note')!;
+  const errorBox=dlg.querySelector<HTMLElement>('#dialog-error')!;
+  const submit=dlg.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  const currentAccount=()=>observed.get(Number(accountSelect.value));
+  const setError=(text:string)=>{errorBox.className=text?'error':'';errorBox.textContent=text;};
+  const update=()=>{
+    const account=currentAccount();
+    if(!account)return;
+    const current=dlg.querySelector<HTMLElement>('#reconcile-current');
+    const projected=dlg.querySelector<HTMLElement>('#reconcile-projected');
+    const difference=dlg.querySelector<HTMLElement>('#reconcile-delta');
+    if(current)current.textContent='Aktuell: '+formatMinor(account.balanceMinor,account);
+    if(projected)projected.textContent='Prognose inkl. künftiger Buchungen: '+
+      formatMinor(account.projectedBalanceMinor,account);
+    const label=input.closest('label');
+    if(label)label.firstChild!.textContent='Tatsächlicher Kontostand ('+account.currency+')';
+    try{
+      const amount=parseReconciliationAmount(input.value,account.decimals);
+      if(difference)difference.textContent='Differenz: '+
+        formatMinor(reconciliationPreview(amount,account.balanceMinor),account)+' (Vorschau)';
+    }catch(error){if(difference)difference.textContent=error instanceof Error?error.message:'Bitte gültigen Betrag eingeben.';}
+  };
+  dlg.querySelectorAll('.close-modal').forEach(button=>button.addEventListener('click',()=>{if(!submitting)dlg.close();}));
+  dlg.addEventListener('close',()=>dlg.remove());
+  accountSelect.addEventListener('change',()=>{
+    needsReconfirmation=false;setError('');
+    const acc=currentAccount();
+    if(acc)input.value=formatReconciliationInput(acc.balanceMinor,acc.decimals);
+    update();
+  });
+  input.addEventListener('input',update);
+  input.addEventListener('focus',()=>input.select());
+  dlg.querySelector<HTMLFormElement>('form')!.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(submitting)return;
+    const account=currentAccount();
+    if(!account||!canReconcile(remote.session,remote.reconciliationSupported)||
+       remote.pending||serverWriteBusy){
+      setError('Der Serverabgleich ist gesperrt oder ein älterer Schreibauftrag ist noch ungeklärt.');
+      return;
+    }
+    let actual:number;
+    try{actual=parseReconciliationAmount(input.value,account.decimals);}
+    catch(error){setError(error instanceof Error?error.message:'Ungültiger Kontostand.');return;}
+    const delta=reconciliationPreview(actual,account.balanceMinor);
+    const summary='Konto: '+account.name+'\nIst: '+formatMinor(account.balanceMinor,account)+
+      '\nTatsächlich: '+formatMinor(actual,account)+'\nDifferenz: '+formatMinor(delta,account)+
+      '\n\n'+(needsReconfirmation?'Der Serverstand hat sich geändert. Nach erneuter Prüfung wirklich abgleichen?':
+        'Diesen Kontostand jetzt auf dem Dashboard-Server abgleichen?');
+    if(!window.confirm(summary))return;
+    submitting=true;submit.disabled=true;
+    let allowResubmit=true;
+    setError('');
+    try{
+      const pending=makeReconciliationPending(remote.server,account,actual,note.value);
+      await issueServerReconciliation(pending);
+      dlg.close();
+    }catch(error){
+      if(error instanceof DashboardApiError&&error.status===409){
+        // The rejected UUID is cleared by issueServerReconciliation. Re-read
+        // server balances before offering any newly confirmed request.
+        try{
+          const client=await connectedServerClient();
+          const [accounts,session,supported]=await Promise.all([
+            client.accounts(),client.session(),client.reconciliationSupported()]);
+          remote.session=session;remote.reconciliationSupported=supported;
+          remote.accounts=accounts;
+          const fresh=accounts.find(a=>a.id===account.id);
+          if(fresh&&fresh.active&&canReconcile(session,supported)){
+            observed.set(account.id,fresh);
+            needsReconfirmation=fresh.balanceMinor!==account.balanceMinor;
+            update();render();
+            setError(needsReconfirmation?
+              'Der Ist-Kontostand hat sich auf '+formatMinor(fresh.balanceMinor,fresh)+
+              ' geändert. Die Differenz wurde neu berechnet. Bitte prüfen und den Abgleich ausdrücklich erneut bestätigen.':
+              'Server meldet einen Konflikt ohne Saldoänderung. Bitte Servermodus und Konto prüfen; kein neuer Auftrag wurde gesendet.');
+            if(!needsReconfirmation)allowResubmit=false;
+          }else{
+            setError('Der Server erlaubt für dieses Konto derzeit keinen Abgleich. Bitte die Verbindung prüfen.');
+            allowResubmit=false;
+          }
+        }catch{
+          setError('Konflikt: Serverdaten konnten nicht neu geladen werden. Keine automatische Wiederholung.');
+          allowResubmit=false;
+        }
+      }else if(remote.pending){
+        setError('Serverantwort unklar. Der unveränderte Auftrag und seine UUID wurden sicher gespeichert. Dieses Fenster schließen und über „Offener Kontostandsabgleich“ denselben Auftrag erneut senden. Niemals einen neuen Auftrag starten.');
+        allowResubmit=false;
+      }else{
+        setError(error instanceof Error?error.message:String(error));
+        if(!canReconcile(remote.session,remote.reconciliationSupported))allowResubmit=false;
+      }
+    }finally{
+      submitting=false;
+      submit.disabled=Boolean(remote.pending)||!canReconcile(remote.session,remote.reconciliationSupported)||
+        !allowResubmit;
+      // An uncertain outcome or unresolved conflict cannot create a fresh UUID.
+    }
+  });
+  dlg.showModal();
+  update();
+}
+
 function reconcileAccountDialog(accountId?:number):void{
   if(!state.accounts.length)return;
   const initial=state.accounts.find(a=>a.id===accountId)?.id??defaultAccountId();
@@ -1479,7 +1917,13 @@ async function click(action: string, id?: number): Promise<void> {
   if(serverMode){
     const allowed=new Set(['go-home','go-bookings','go-settings','go-recurring','go-reports',
       'server-reload','server-more-bookings','server-add-booking','server-edit-booking','server-delete-booking',
-      'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending']);
+      'toggle-server-booking','server-reset-filters','server-previous-report-month','server-next-report-month','print-report',
+      'server-home-reset','server-more-history',
+      'server-history-reset','server-history-last-2','server-history-last-12','server-history-reload',
+      'server-recurring-reload','server-recurring-add','server-recurring-edit','server-recurring-save-mode',
+      'server-recurring-post','server-recurring-delete',
+      'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending',
+      'server-reconcile-account']);
     if(!allowed.has(action)){remote.error='Lokale Funktionen sind im Servermodus gesperrt. Zuerst zu Lokal wechseln.';render();return;}
     switch(action){
       case 'server-save-default':{
@@ -1491,8 +1935,78 @@ async function click(action: string, id?: number): Promise<void> {
         }catch{remote.error='Standardkonto konnte nicht gespeichert werden.';}
         render();return;
       }
-      case 'server-reload':await loadRemoteServer();return;
+      case 'toggle-server-booking':{
+        remote.expandedBookingId=remote.expandedBookingId===id?null:(id??null);
+        const root=document.querySelector('#server-booking-results');
+        if(root)root.innerHTML=serverBookingResultsHtml(remote,view==='home'?'home':'bookings');
+        return;
+      }
+      case 'server-reset-filters':{
+        remote.period='30';remote.periodExplicit=false;remote.kindFilter='all';remote.accountFilter='all';
+        remote.categoryFilter='all';remote.dateFrom='';remote.dateTo='';remote.searchBookings='';
+        remote.visibleCount=readBookingList().pageSize;remote.expandedBookingId=null;render();return;
+      }
+      case 'server-previous-report-month':{
+        remote.reportMonth=monthOffset(remote.reportMonth,-1);render();return;
+      }
+      case 'server-next-report-month':{
+        remote.reportMonth=monthOffset(remote.reportMonth,1);render();return;
+      }
+      case 'go-recurring':view='recurring';await loadRemoteRecurring();return;
+      case 'server-recurring-reload':await loadRemoteRecurring();return;
+      case 'server-recurring-add':serverRecurringDialog();return;
+      case 'server-recurring-edit':{
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(rule)serverRecurringDialog(rule);return;
+      }
+      case 'server-recurring-save-mode':{
+        if(!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||remote.pending||serverWriteBusy)return;
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(!rule)return;
+        const next=document.querySelector<HTMLSelectElement>('#server-recurring-mode-'+rule.id)?.value as ServerRecurringMode|undefined;
+        if(!next||!['paused','manual','auto'].includes(next)||next===rule.mode)return;
+        if(next==='auto'){
+          if(remote.session.role!=='admin'){remote.recurringError='Nur Administratoren dürfen automatische Buchungen freigeben.';render();return;}
+          if(!window.confirm('Automatische Regel aktivieren? Das Dashboard wird künftige fällige Buchungen selbstständig in das Finanzbuch schreiben. Keine Banküberweisung.'))return;
+        }else if(!window.confirm('Ausführungsmodus für die Serverregel „'+rule.title+'“ ändern?'))return;
+        try{await issueServerWrite(createRecurringPendingWrite(remote.server,'mode',rule.id,{mode:next},rule.revision));}
+        catch{/* encrypted pending write is retained and visible */}return;
+      }
+      case 'server-recurring-post':{
+        if(!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||remote.pending||serverWriteBusy)return;
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(!rule||rule.mode!=='manual'||!rule.nextOn||rule.nextOn>today())return;
+        if(window.prompt('Fällige Serverbuchung „'+rule.title+'“ wirklich erzeugen? Zur Bestätigung BUCHEN eingeben.')!=='BUCHEN')return;
+        try{await issueServerWrite(createRecurringPendingWrite(remote.server,'post',rule.id,{confirm:'BUCHEN'},rule.revision));}
+        catch{/* never invent a new idempotency key on unknown outcome */}return;
+      }
+      case 'server-recurring-delete':{
+        if(!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||remote.pending||serverWriteBusy)return;
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(!rule)return;
+        if(window.prompt('Serverregel archivieren? Bereits gebuchte Umsätze bleiben erhalten. Zur Bestätigung den vollständigen Regeltitel eingeben: '+rule.title)!==rule.title)return;
+        try{await issueServerWrite(createRecurringPendingWrite(remote.server,'delete',rule.id,{confirm_title:rule.title},rule.revision));}
+        catch{/* encrypted pending write is retained and visible */}return;
+      }
+      case 'server-reload':if(view==='recurring')await loadRemoteRecurring();else await loadRemoteServer();return;
       case 'server-more-bookings':await loadMoreRemote(view==='home');return;
+      case 'server-more-history':await loadMoreRemoteHistory();return;
+      case 'server-home-reset':{
+        const current=today().slice(0,7);
+        remote.homeCompare={...remote.homeCompare,first:current,second:calendarMonth(current,-1),
+          account:'all',category:'all'};
+        render();void loadMonthlyFor('home');return;
+      }
+      case 'server-history-reset':
+      case 'server-history-last-2':
+      case 'server-history-last-12':{
+        const end=today().slice(0,7);
+        const first=calendarMonth(end,action==='server-history-last-12'?-11:-1);
+        remote.historyFilter={first,second:end,currency:remote.historyFilter.currency,account:'all',category:'all'};
+        render();void loadMonthlyFor('history');return;
+      }
+      case 'server-history-reload':void loadMonthlyFor('history');return;
+      case 'server-reconcile-account':serverReconcileDialog();return;
       case 'server-add-booking':serverCreateDialog();return;
       case 'server-edit-booking':{
         const row=remote.bookings.find(x=>x.id===id);if(row)serverCreateDialog(row);return;
@@ -1505,7 +2019,9 @@ async function click(action: string, id?: number): Promise<void> {
         catch{/* pending and error displayed */}return;
       }
       case 'server-retry-pending':{
-        try{if(!remote.pending)throw new Error('Kein offener Schreibauftrag.');await issueServerWrite(remote.pending,true);}
+        try{if(!remote.pending)throw new Error('Kein offener Schreibauftrag.');
+          if(isReconciliationPending(remote.pending))await issueServerReconciliation(remote.pending,true);
+          else await issueServerWrite(remote.pending,true);}
         catch{/* message visible */}return;
       }
       case 'server-discard-pending':{
@@ -1533,7 +2049,12 @@ async function click(action: string, id?: number): Promise<void> {
       dashboardProbeResult='Lokal bleibt aktiv. Kein Servermodus aktiviert; keine Buchungen übertragen.';
       render();break;
     }
-    case 'go-home':view='home';render();break;
+    case 'go-home':view='home';render();if(serverMode)void loadMonthlyFor('home');break;
+    case 'local-home-reset':{
+      const current=today().slice(0,7);
+      homeCompare={first:current,second:calendarMonth(current,-1),currency:'EUR',account:'all',category:'all'};
+      render();break;
+    }
     case 'go-bookings':view='bookings';render();break;
     case 'go-settings':view='settings';render();break;
     case 'go-data-check':view='data-check';render();break;
@@ -1547,7 +2068,16 @@ async function click(action: string, id?: number): Promise<void> {
       catch(e){message=String(e);render();}break;
     }
     case 'go-recurring':view='recurring';render();break;
-    case 'go-reports':view='reports';render();break;
+    case 'go-reports':view='reports';render();if(serverMode)void loadMonthlyFor('history');break;
+    case 'local-history-reset':
+    case 'local-history-last-2':
+    case 'local-history-last-12':{
+      const end=today().slice(0,7);
+      const first=calendarMonth(end,action==='local-history-last-12'?-11:-1);
+      historyFilter={first,second:end,currency:'EUR',account:'all',category:'all'};
+      render();break;
+    }
+    case 'local-history-reload':render();break;
     case 'previous-report-month':reportMonth=monthOffset(reportMonth,-1);render();break;
     case 'next-report-month':reportMonth=monthOffset(reportMonth,1);render();break;
     case 'export-bookings-csv':try{const rows=filteredBookings();if(!rows.length)throw new Error('Keine Buchungen zum Exportieren.');await downloadText(exportBookingsCsv(rows,state),`FieLanzen-Buchungen-${today()}.csv`,'text/csv;charset=utf-8');}catch(e){message=String(e);render();}break;
@@ -1691,6 +2221,12 @@ async function click(action: string, id?: number): Promise<void> {
 document.addEventListener('toggle',e=>{
   const el=e.target as HTMLElement;
   if(el instanceof HTMLDetailsElement && el.id==='home-account-balances')homeBalancesOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='local-home-month-filters')homeFiltersOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-home-month-filters')remote.homeFiltersOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='local-history-filters')historyFiltersOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-history-filters')remote.historyFiltersOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-home-account-balances')remote.balancesOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-booking-advanced-filters')remote.filtersOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='booking-advanced-filters')bookingFiltersOpen=el.open;
 },true);
 document.addEventListener('click',e=>{
@@ -1700,6 +2236,41 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   if(!appUnlocked)return;
   const target=e.target as HTMLInputElement;
+  if(target.id.startsWith('local-history-')||target.id.startsWith('server-history-')){
+    const isServer=target.id.startsWith('server-history-');
+    if(isServer!==serverMode)return;
+    const prefix=isServer?'server-history-':'local-history-';
+    const suffix=target.id.slice(prefix.length);
+    const current=isServer?remote.historyFilter:historyFilter;
+    const next={...current};
+    if(suffix==='month-a'||suffix==='month-b'){
+      if(!/^(?:19|20|21)\d{2}-(0[1-9]|1[0-2])$/.test(target.value))return;
+      next[suffix==='month-a'?'first':'second']=target.value;
+    }else if(suffix==='currency'){next.currency=target.value;next.account='all';}
+    else if(suffix==='account')next.account=target.value;
+    else if(suffix==='category')next.category=target.value;
+    else return;
+    try{historyBounds(next);}catch(error){message=error instanceof Error?error.message:String(error);render();return;}
+    if(isServer){remote.historyFilter=next;void loadMonthlyFor('history');}
+    else{historyFilter=next;render();}
+    return;
+  }
+  if(target.id.startsWith('local-home-')||target.id.startsWith('server-home-')){
+    const isServer=target.id.startsWith('server-home-');
+    if(isServer!==serverMode)return;
+    const next=isServer?remote.homeCompare:homeCompare;
+    const suffix=target.id.slice(isServer?'server-home-'.length:'local-home-'.length);
+    const validMonth=/^\d{4}-(0[1-9]|1[0-2])$/;
+    if(suffix==='month-a'||suffix==='month-b'){
+      if(!validMonth.test(target.value))return;
+      next[suffix==='month-a'?'first':'second']=target.value;
+    }else if(suffix==='currency'){
+      next.currency=target.value;next.account='all';
+    }else if(suffix==='account')next.account=target.value;
+    else if(suffix==='category')next.category=target.value;
+    else return;
+    if(isServer)void loadMonthlyFor('home');else render();return;
+  }
   if(['booking-list-size','booking-list-sort','local-list-sort','server-list-sort'].includes(target.id)){
     const current=readBookingList();
     const next={...current, ...(target.id==='booking-list-size'?{pageSize:Number(target.value)}:{sort:target.value})};
@@ -1708,6 +2279,7 @@ document.addEventListener('change',e=>{
     visibleHomeBookingCount=readBookingList().pageSize;
     remote.visibleCount=readBookingList().pageSize;
     remote.homeVisibleCount=readBookingList().pageSize;
+    remote.expandedBookingId=null;
     expandedBookingId=null;
     render();return;
   }
@@ -1718,6 +2290,28 @@ document.addEventListener('change',e=>{
     void storage.saveSettings(next).then(async()=>{state=await storage.read();scheduleSnapshotStaging();render();}).catch(err=>{message=String(err);render();});return;
   }
   const element = e.target as HTMLSelectElement;
+  if(serverMode && element.id.startsWith('server-filter-')){
+    switch(element.id){
+      case 'server-filter-period':remote.period=element.value as typeof remote.period;remote.periodExplicit=true;break;
+      case 'server-filter-kind':remote.kindFilter=element.value as typeof remote.kindFilter;break;
+      case 'server-filter-account':remote.accountFilter=element.value;break;
+      case 'server-filter-category':remote.categoryFilter=element.value;break;
+      case 'server-filter-from':remote.dateFrom=element.value;break;
+      case 'server-filter-to':remote.dateTo=element.value;break;
+      default:return;
+    }
+    remote.visibleCount=readBookingList().pageSize;remote.expandedBookingId=null;render();return;
+  }
+  if(serverMode && element.id==='server-report-month'){
+    if(/^\d{4}-(0[1-9]|1[0-2])$/.test(element.value))remote.reportMonth=element.value;
+    render();return;
+  }
+  if(serverMode && element.id==='server-report-account-filter'){
+    remote.reportAccountFilter=element.value;render();return;
+  }
+  if(serverMode && element.id==='server-report-currency-filter'){
+    remote.reportCurrencyFilter=element.value;remote.reportAccountFilter='all';render();return;
+  }
   if(element.id==='audit-choice'){auditChoice=element.value;auditQuery='';auditRowsVisible=80;render();return;}
   if(element.id==='report-month'){
     if(/^\d{4}-(0[1-9]|1[0-2])$/.test(element.value))reportMonth=element.value;render();return;
@@ -1760,8 +2354,12 @@ document.addEventListener('input',e=>{
     const forHome=field.id==='server-home-search';
     if(forHome){remote.searchHome=field.value;remote.homeVisibleCount=readBookingList().pageSize;}
     else{remote.searchBookings=field.value;remote.visibleCount=readBookingList().pageSize;}
+    remote.expandedBookingId=null;
     const root=document.querySelector('#server-booking-results');
     if(root)root.innerHTML=serverBookingResultsHtml(remote,forHome?'home':'bookings');
+    const count=document.querySelector(forHome?'#server-home-booking-count':'#server-booking-count');
+    if(count)count.textContent=displayedServerBookings(remote,forHome?'home':'bookings').length+(forHome?' Treffer':' Buchungen');
+    if(!forHome){const summary=document.querySelector('#server-bookings-summary');if(summary)summary.innerHTML=serverBookingSummaryHtml(remote);}
     return;
   }
   if (!['booking-search','booking-quick-search'].includes(field.id)) return;

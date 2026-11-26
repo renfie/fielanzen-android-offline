@@ -7,14 +7,14 @@
 /** Dashboard 1.9.58-dev.16 Mobile API v1. No local SQLite or credentials here. */
 export type RemoteKind='expense'|'income'|'transfer';
 export type HttpMethod='GET'|'POST'|'PUT'|'DELETE';
-export interface DashboardSession {financeMode:string;access:string;canWrite:boolean;}
+export interface DashboardSession {financeMode:string;access:string;canWrite:boolean;role:string;}
 export interface RemoteAccount {id:number;name:string;currency:string;symbol:string;decimals:number;balanceMinor:number;projectedBalanceMinor:number;active:boolean;includedInTotal:boolean;}
 export interface RemoteCategory {id:number;name:string;kind:'income'|'expense';}
 export interface RemotePayee {id:number;name:string;}
 export interface RemoteBooking {id:number;revision:string;kind:RemoteKind;date:string;accountId:number;toAccountId:number|null;categoryId:number;amountMinor:number;payeeTitle:string;note:string;isRecurring?:boolean;isRuleMatched?:boolean;}
 export interface RemotePage {items:RemoteBooking[];nextBefore:string|null;}
 export interface RemoteDraft {kind:RemoteKind;date:string;account_id:number;to_account_id?:number;category_id:number;amount_minor:number;payee_title:string;note:string;}
-export interface PendingWrite {server:string;method:'POST'|'PUT'|'DELETE';path:string;data:RemoteDraft|null;idempotencyKey:string;ifMatch?:string;createdAt:string;}
+export interface PendingWrite {server:string;method:'POST'|'PUT'|'DELETE';path:string;data:unknown;idempotencyKey:string;ifMatch?:string;createdAt:string;}
 export class DashboardApiError extends Error {
   constructor(public status:number, public code:string, message:string){super(message);this.name='DashboardApiError';}
 }
@@ -101,7 +101,7 @@ export function parseSession(input:unknown):DashboardSession {
   const financeMode=value.finance_mode;
   if(typeof financeMode!=='string')throw new Error('Der Server nennt keinen finance_mode.');
   const access=typeof value.access==='string'?value.access:'read';
-  return {financeMode,access,canWrite:value.can_write===true&&financeMode==='web'&&access==='write'};
+  return {financeMode,access,canWrite:value.can_write===true&&financeMode==='web'&&access==='write',role:typeof value.role==='string'?value.role:'viewer'};
 }
 export function parseCapabilities(input:unknown):boolean {
   const value=obj(input)&&obj(input.capabilities)?input.capabilities:obj(input)&&obj(input.data)?input.data:input;
@@ -128,8 +128,14 @@ export function parsePending(input:string):PendingWrite|null{
   if(!input)return null;
   let p:unknown;try{p=JSON.parse(input);}catch{throw new Error('Gespeicherte Serveroperation ist beschädigt.');}
   if(!obj(p)||!['POST','PUT','DELETE'].includes(String(p.method))||typeof p.server!=='string'||typeof p.path!=='string'||
-    !/^\/api\/mobile\/v1\/bookings(?:\/\d+)?$/.test(p.path)||typeof p.idempotencyKey!=='string'||
+    !/^\/api\/mobile\/v1\/(?:bookings(?:\/\d+)?|recurring(?:\/\d+(?:\/(?:mode|post))?)?|accounts\/[1-9]\d*\/reconcile)$/.test(p.path)||typeof p.idempotencyKey!=='string'||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(p.idempotencyKey))
     throw new Error('Gespeicherte Serveroperation hat ein ungültiges Format.');
+  if(/^\/api\/mobile\/v1\/accounts\/[1-9]\d*\/reconcile$/.test(p.path)){
+    if(p.method!=='POST'||!obj(p.data)||!Number.isSafeInteger(p.data.actual_balance_minor)||
+      !Number.isSafeInteger(p.data.expected_balance_minor)||typeof p.data.note!=='string'||
+      p.data.note.length>500||Object.keys(p.data).sort().join(',')!=='actual_balance_minor,expected_balance_minor,note')
+      throw new Error('Gespeicherter Saldoabgleich ist beschädigt.');
+  }
   return p as unknown as PendingWrite;
 }

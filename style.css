@@ -386,3 +386,141 @@ html.native-android .app-locked{inset:0;}
 /* Copyright holder displayed in the GPL settings card. */
 .copyright-notice{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:9px 11px;margin:8px 0 13px;border:1px solid #e1e6e7;background:#f6f8f8;border-radius:8px;font-size:.79rem;line-height:1.45}
 .copyright-notice span{white-space:nowrap;color:#68747a;font-size:.73rem}
+
+
+/* Alpha 33: all local/server booking and recurring suggestions float in the
+   visible Android viewport, never under the software keyboard or modal fields. */
+dialog .keyboard-aware-menu,
+dialog .server-search-field .keyboard-aware-menu,
+dialog .payee-picker .keyboard-aware-menu,
+dialog .category-picker .keyboard-aware-menu {
+  position:fixed!important;
+  right:auto!important;
+  bottom:auto!important;
+  margin:0!important;
+  z-index:2147483647!important;
+  box-sizing:border-box;
+  padding:3px;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  overflow-y:auto;
+}
+dialog .keyboard-aware-menu[hidden]{display:none!important}
+dialog .keyboard-aware-menu > button {
+  min-height:44px;
+  padding:10px 12px;
+  font:500 16px/1.3 system-ui,-apple-system,"Segoe UI",sans-serif;
+  border-radius:6px;
+  overflow-wrap:anywhere;
+}
+
+
+/* Alpha 34: Dashboard-style month comparison on both source-isolated home views. */
+.home-compare-card{padding:16px}
+.home-compare-filter-disclosure{border:1px solid #d7dddc;border-radius:12px;margin-bottom:16px;background:#f8faf9;overflow:hidden}
+.home-compare-filter-disclosure>summary{cursor:pointer;display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:14px}
+.home-compare-filter-disclosure>summary strong{font-size:.95rem}
+.home-compare-filter-disclosure>summary .muted{font-size:.76rem}
+.home-compare-fields{padding:0 14px 15px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.home-compare-fields>.field{min-width:0;margin:0}
+.home-compare-fields select,.home-compare-fields input{width:100%;min-width:0;box-sizing:border-box;min-height:43px}
+.home-compare-reset{grid-column:1/-1}
+.home-compare-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.home-compare-month{border:1px solid #dae1e1;border-radius:12px;padding:12px;min-width:0}
+.home-compare-title{padding:13px 15px;color:#fff;background:#126e78;border-radius:7px;display:grid;gap:5px}
+.home-compare-title.second{background:#a55a21}
+.home-compare-title small{font-size:.7rem;letter-spacing:.065em;font-weight:750}
+.home-compare-title strong{font-size:1.12rem;line-height:1.25}
+.home-compare-metrics{display:grid;gap:0;padding:9px 2px 7px}
+.home-compare-metrics>div{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #e5e9e9}
+.home-compare-metrics span{font-size:.84rem;color:#647277}
+.home-compare-metrics strong{font-size:.95rem;font-variant-numeric:tabular-nums}
+.home-compare-metrics .home-compare-net{border:0;background:#e8f1f1;border-left:4px solid #126e78;border-radius:8px;padding:12px;margin-top:6px}
+.home-compare-bars{display:grid;gap:9px;margin:12px 0 8px}
+.home-compare-bars>div{display:grid;grid-template-columns:75px minmax(0,1fr);gap:7px;align-items:center}
+.home-compare-bars span{font-size:.72rem;color:#617279}
+.home-compare-track{height:9px;min-width:0;background:#eef1f1;border-radius:10px;overflow:hidden}
+.home-compare-track>i{display:block;height:100%;border-radius:10px}
+.home-compare-income{background:#137a65}.home-compare-expense{background:#b34b46}
+.account-status{display:inline-block;margin:0 4px;color:#687779;font-size:.7rem;font-weight:500}
+.trend-unknown .trend-bars{min-height:20px;display:flex;justify-content:center;align-items:center}
+.trend-unknown .trend-bars small{font-size:.66rem;text-align:center}
+html[data-theme="dark"] .home-compare-filter-disclosure,html[data-theme="dark"] .home-compare-month{background:#26333d;border-color:#44535e}
+html[data-theme="dark"] .home-compare-metrics>div{border-color:#44535e}
+html[data-theme="dark"] .home-compare-metrics .home-compare-net{background:#31464a}
+html[data-theme="dark"] .home-compare-track{background:#3b4a51}
+@media(max-width:700px){.home-compare-grid{grid-template-columns:1fr}}
+@media(max-width:380px){.home-compare-fields{grid-template-columns:1fr}.home-compare-card{padding:12px}.home-compare-metrics strong{font-size:.88rem}}
+
+
+/* Alpha 35: native history view, shared between local SQLite and full server reports. */
+.history-filters{padding:0;overflow:hidden}
+.history-filters details>summary{cursor:pointer;min-height:60px;padding:15px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.history-filters summary strong{font-size:1.04rem}
+.history-filters summary small{font-size:.77rem;color:#63757b}
+.history-filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 15px 15px}
+.history-filter-grid .field{margin:0;min-width:0}
+.history-filter-grid input,.history-filter-grid select{min-width:0;width:100%;box-sizing:border-box;min-height:42px}
+.history-presets{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.history-presets button{flex:1;min-width:78px}
+.history-kpi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.history-kpi{padding:15px;border:1px solid #e1e6e5;border-radius:12px;background:#fff;display:flex;flex-direction:column;min-width:0;gap:5px}
+.history-kpi span{font-size:.82rem;color:#5e7077}
+.history-kpi strong{font-size:1.18rem;line-height:1.25;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.history-kpi small{font-size:.72rem;color:#68787d}
+.history-highlight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.history-highlight{min-width:0;padding:14px}
+.history-highlight h3{font-size:.86rem;margin:0 0 8px;line-height:1.35}
+.history-highlight strong{font-size:1.14rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.history-highlight p{margin:5px 0 0}
+.history-timeline-card h2,.history-pie-card h2{margin-bottom:5px}
+.history-timeline{display:grid;gap:0;margin-top:16px}
+.history-month-row{display:grid;grid-template-columns:75px minmax(0,1fr);gap:10px;border-bottom:1px solid #e1e7e6;padding:10px 0}
+.history-month-row:last-child{border:0}
+.history-month-name{font-size:.8rem;font-weight:650;padding-top:5px}
+.history-month-bars{display:grid;gap:5px;min-width:0}
+.history-bar-line{display:grid;grid-template-columns:64px minmax(0,1fr) 88px;gap:6px;align-items:center;font-size:.73rem}
+.history-bar-line span{color:#586c73}
+.history-bar-line strong{text-align:right;font-size:.75rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.history-bar-svg{display:block;width:100%;height:13px;overflow:visible;min-width:0}
+.history-bar-track-svg{fill:#e7eded}
+.history-income-bar{fill:#087e73}
+.history-expense-bar{fill:#b96b20}
+.history-pies{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.history-pie-card{min-width:0}
+.history-pie-layout{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding-top:12px}
+.history-donut{display:block;width:min(205px,54vw);height:auto;aspect-ratio:1;margin:0 auto 15px;flex-shrink:0}
+.history-donut-segment{stroke-linecap:butt}
+.history-pie-legend{display:grid;gap:0;width:100%}
+.history-pie-legend-row{display:grid;grid-template-columns:12px minmax(0,1fr) auto;align-items:center;gap:8px;min-width:0;font-size:.78rem;padding:7px 0;border-bottom:1px solid #e8eded}
+.history-pie-legend-row:last-child{border-bottom:0}
+.history-pie-color{display:block;width:12px;height:12px;flex-shrink:0}
+.history-pie-legend-row>span:nth-child(2){overflow-wrap:anywhere;line-height:1.28}
+.history-pie-legend-row strong{font-size:.76rem;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.history-pie-legend-row small{color:#65787e}
+.history-footer{margin:10px 0 28px}
+html[data-theme="dark"] .history-kpi{background:#27343e;border-color:#48555d}
+html[data-theme="dark"] .history-bar-track-svg{fill:#3e4c54}
+html[data-theme="dark"] .history-pie-legend-row{border-color:#3e4c54}
+@media(max-width:720px){.history-pies{grid-template-columns:1fr}}
+@media(max-width:410px){
+ .history-kpi-grid,.history-highlight-grid{grid-template-columns:1fr}
+ .history-month-row{grid-template-columns:58px minmax(0,1fr);gap:6px}
+ .history-bar-line{grid-template-columns:50px minmax(0,1fr) 72px;gap:4px;font-size:.67rem}
+ .history-bar-line strong{font-size:.67rem}
+ .history-filter-grid{grid-template-columns:1fr}
+}
+
+
+/* Alpha 36: never rely on inline styles for graph data; WebView CSP blocks them. */
+.history-pie-card{padding:16px}
+.history-pie-card h2{margin-bottom:4px}
+.history-timeline-card{overflow:hidden}
+.history-month-row{align-items:center}
+.history-bar-line strong{overflow-wrap:normal}
+@media (max-width:410px){
+ .history-pie-card{padding:14px}
+ .history-pie-legend-row{gap:7px}
+ .history-pie-legend-row strong{font-size:.73rem}
+ .history-donut{width:min(195px,58vw)}
+}

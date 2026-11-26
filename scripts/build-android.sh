@@ -7,6 +7,7 @@
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
+VERSION="$(node -p 'require("./package.json").version')"
 command -v npm >/dev/null || { echo 'Node.js >=22 und npm erforderlich.' >&2; exit 1; }
 if [[ -f package-lock.json ]];then npm ci --no-audit --no-fund;else npm install --no-audit --no-fund;fi
 npm run build
@@ -15,6 +16,7 @@ npx --no-install cap sync android
 python3 scripts/configure-android.py
 (cd android && ./gradlew --no-daemon assembleDebug)
 mkdir -p release
-cp android/app/build/outputs/apk/debug/app-debug.apk release/FieLanzen-Offline-0.1.0-alpha.25-debug.apk
-sha256sum release/FieLanzen-Offline-0.1.0-alpha.25-debug.apk > release/FieLanzen-Offline-0.1.0-alpha.25-debug.apk.sha256
-printf 'APK: %s\n' "$(pwd)/release/FieLanzen-Offline-0.1.0-alpha.25-debug.apk"
+DEST="release/FieLanzen-Offline-${VERSION}-debug.apk"
+cp android/app/build/outputs/apk/debug/app-debug.apk "$DEST"
+sha256sum "$DEST" > "${DEST}.sha256"
+printf 'APK: %s\n' "$(pwd)/$DEST"

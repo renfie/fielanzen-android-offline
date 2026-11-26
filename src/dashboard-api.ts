@@ -13,6 +13,10 @@ import {runningNatively} from './file-export.js';
 import {mtlsHttp,useMtlsFor} from './mtls-http.js';
 import {isClientCertificateChallenge} from './dashboard-connection.js';
 import {DashboardApiError,parseAccounts,parseCategories,parsePayees,parseBookings,parseSession,parseCapabilities} from './dashboard-protocol.js';
+import {recurringCapability,parseServerRecurringRules} from './server-recurring.js';
+import {reconciliationCapability} from './server-reconciliation.js';
+import {buildMonthlyPath,monthlyReportsCapability,parseMonthlyReport,type MonthQuery,type MonthlyReport} from './monthly-api.js';
+import type {ServerRecurringRule} from './server-recurring.js';
 import type {RemoteAccount,RemoteCategory,RemotePayee,RemotePage,RemoteDraft,RemoteBooking,DashboardSession,PendingWrite} from './dashboard-protocol.js';
 export type {RemoteAccount,RemoteCategory,RemotePayee,RemotePage,RemoteDraft,RemoteBooking,DashboardSession,PendingWrite};
 export interface DashboardProbe {online:boolean;apiReady:boolean;message:string;}
@@ -31,7 +35,7 @@ function asData(data:unknown):unknown{
   }
   return data;
 }
-export async function apiCall(base:string,path:string,method:'GET'|'POST'|'PUT'|'DELETE'='GET',token?:string,body?:RemoteDraft|null,headersExtra:Record<string,string>={}):Promise<unknown>{
+export async function apiCall(base:string,path:string,method:'GET'|'POST'|'PUT'|'DELETE'='GET',token?:string,body?:object|null,headersExtra:Record<string,string>={}):Promise<unknown>{
   const normalized=normalizeDashboardUrl(base);
   if(!path.startsWith('/api/mobile/v1/')&&path!=='/healthz')throw new Error('Nur bekannte Dashboard-API-Pfade zulässig.');
   if(!runningNatively()){
@@ -80,6 +84,21 @@ export class DashboardClient {
   accounts():Promise<RemoteAccount[]>{return apiCall(this.base,API+'/accounts','GET',this.token).then(parseAccounts);}
   categories():Promise<RemoteCategory[]>{return apiCall(this.base,API+'/categories','GET',this.token).then(parseCategories);}
   payees():Promise<RemotePayee[]>{return apiCall(this.base,API+'/payees','GET',this.token).then(parsePayees);}
+  recurringSupported():Promise<boolean>{
+    return apiCall(this.base,API+'/capabilities').then(recurringCapability);
+  }
+  monthlyReportsSupported():Promise<boolean>{
+    return apiCall(this.base,API+'/capabilities').then(monthlyReportsCapability);
+  }
+  reconciliationSupported():Promise<boolean>{
+    return apiCall(this.base,API+'/capabilities').then(reconciliationCapability);
+  }
+  monthlyReports(query:MonthQuery):Promise<MonthlyReport>{
+    return apiCall(this.base,buildMonthlyPath(query),'GET',this.token).then(parseMonthlyReport);
+  }
+  recurringRules():Promise<ServerRecurringRule[]>{
+    return apiCall(this.base,API+'/recurring','GET',this.token).then(parseServerRecurringRules);
+  }
   bookings(before?:string):Promise<RemotePage>{
     const cursor=before?'&before='+encodeURIComponent(before):'';
     return apiCall(this.base,API+'/bookings?limit=100'+cursor,'GET',this.token).then(parseBookings);
@@ -89,7 +108,9 @@ export class DashboardClient {
     if(p.method!=='POST'&& !p.ifMatch)throw new Error('If-Match-Revisionsnummer fehlt.');
     const headers:Record<string,string>={'Idempotency-Key':p.idempotencyKey};
     if(p.method!=='POST')headers['If-Match']=p.ifMatch!;
-    return apiCall(this.base,p.path,p.method,this.token,p.data,headers);
+    if(p.data!==null&&(typeof p.data!=='object'||Array.isArray(p.data)))
+      throw new Error('Ungültiges JSON im gespeicherten Schreibauftrag.');
+    return apiCall(this.base,p.path,p.method,this.token,p.data as object|null,headers);
   }
 }
 export function createPendingWrite(server:string,method:'POST'|'PUT'|'DELETE',id:number|null,data:RemoteDraft|null,revision?:string):PendingWrite{
