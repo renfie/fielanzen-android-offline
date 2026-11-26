@@ -120,6 +120,6 @@ test('server recurring changes never go through local rule executor',()=>{
   assert.match(main,/const recurringWrite=request\.path\.startsWith\('\/api\/mobile\/v1\/recurring'\)/);
   assert.equal((main.match(/exportFinancistoCompatible\(state\)/g)||[]).length,4);
   const currentVersion=JSON.parse(read('package.json')).version;
-  assert.match(currentVersion, /^0\.1\.0-alpha\.\d+$/);
+  assert.match(currentVersion, /^(?:\d+\.\d+\.\d+|0\.1\.0-alpha\.\d+)$/);
   assert.ok(read('src/main.ts').includes("export const APP_VERSION='"+currentVersion+"'"));
 });

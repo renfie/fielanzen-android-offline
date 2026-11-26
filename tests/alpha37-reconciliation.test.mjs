@@ -139,5 +139,5 @@ test('server uses local-style form but never local storage, and handles ambiguou
  assert.match(main,/client\.accounts\(\),client\.bookings\(\)/);
  assert.match(main,/loadMonthlyFor\('home'\)/);
  assert.match(source('src/dashboard-api.ts'),/reconciliationSupported/);
- assert.equal(JSON.parse(source('package.json')).version,'0.1.0-alpha.37');
+ assert.match(JSON.parse(source('package.json')).version,/^(?:\d+\.\d+\.\d+|0\.1\.0-alpha\.\d+)$/);
 });

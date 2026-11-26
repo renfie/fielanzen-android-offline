@@ -93,6 +93,18 @@ jobs:
               echo "New version $VERSION (was $PREVIOUS_VERSION): signed release requested."
             fi
           fi
+          # An interrupted version-bump run must not strand a stable release.
+          # A subsequent main push may resume signing only if the stable tag
+          # has never been published. Once the tag exists, ordinary pushes are
+          # debug-only and cannot publish a duplicate.
+          if [[ "$REQUESTED" == false && "$GITHUB_EVENT_NAME" == push &&
+                "$GITHUB_REF" == 'refs/heads/main' &&
+                "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            if ! git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+              echo "No stable release tag $TAG found; retrying the signed build."
+              REQUESTED=true
+            fi
+          fi
           echo "release_requested=$REQUESTED" >> "$GITHUB_OUTPUT"
           echo "Release requested: $REQUESTED"
 
