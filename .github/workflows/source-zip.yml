@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2026 René Fieler (RenFie)
+
+name: Android source project ZIP
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Package complete tracked source tree
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          VERSION="$(node -p 'require("./package.json").version')"
+          ROOT="fielanzen-android-offline"
+          ARCHIVE="FieLanzen-Offline-${VERSION}-Projekt.zip"
+          git archive --format=zip --prefix="${ROOT}/" HEAD -o "${ARCHIVE}"
+          sha256sum "${ARCHIVE}" > "${ARCHIVE}.sha256"
+          unzip -tq "${ARCHIVE}"
+          echo "ARCHIVE=${ARCHIVE}" >> "${GITHUB_ENV}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fielanzen-source-project-${{ github.sha }}
+          path: |
+            FieLanzen-Offline-*-Projekt.zip
+            FieLanzen-Offline-*-Projekt.zip.sha256
+          retention-days: 30
+          if-no-files-found: error
