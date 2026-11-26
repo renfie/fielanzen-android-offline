@@ -85,18 +85,28 @@ function pie(report:MonthlyReport,kind:'income'|'expense'):string{
   const categories=groupedCategories(report,kind).filter(x=>x.amount>0);
   const total=categories.reduce((n,x)=>n+x.amount,0);
   if(!total)return '<section class="card history-pie-card"><h2>'+title+'</h2><p class="muted small">Keine Buchungen in diesem Zeitraum.</p></section>';
-  let pct=0;
+  // Android WebView applies the restrictive style-src CSP to inline CSS.
+  // SVG presentation attributes work without inline styles and without external libraries.
+  let startPct=0;
   const segments=categories.map((c,i)=>{
-    const start=pct;
-    pct+=c.amount/total*100;
-    return palette[i%palette.length]+' '+start.toFixed(5)+'% '+pct.toFixed(5)+'%';
-  });
-  const legend=categories.map((c,i)=>'<div class="history-pie-legend-row"><span class="history-pie-color" style="background:'+
-    palette[i%palette.length]+'"></span><span>'+esc(c.name)+'</span><strong>'+
-    esc(money(c.amount,report))+' <small>('+String(Math.round(c.amount/total*100))+' %)</small></strong></div>').join('');
+    const pct=c.amount/total*100;
+    const arc='<circle class="history-donut-segment" cx="50" cy="50" r="40" fill="none" '+
+      'stroke="'+palette[i%palette.length]+'" stroke-width="20" pathLength="100" '+
+      'stroke-dasharray="'+pct.toFixed(5)+' '+(100-pct).toFixed(5)+'" '+
+      'stroke-dashoffset="'+(-startPct).toFixed(5)+'" transform="rotate(-90 50 50)"></circle>';
+    startPct+=pct;
+    return arc;
+  }).join('');
+  const donut='<svg class="history-donut" viewBox="0 0 100 100" role="img" aria-label="'+esc(title)+'" focusable="false">'+
+    '<circle cx="50" cy="50" r="40" fill="none" stroke="#e7eded" stroke-width="20"></circle>'+
+    segments+'</svg>';
+  const legend=categories.map((c,i)=>'<div class="history-pie-legend-row">'+
+    '<svg class="history-pie-color" viewBox="0 0 12 12" aria-hidden="true" focusable="false">'+
+      '<rect width="12" height="12" rx="3" fill="'+palette[i%palette.length]+'"></rect></svg>'+
+    '<span>'+esc(c.name)+'</span><strong>'+esc(money(c.amount,report))+
+    ' <small>('+String(Math.round(c.amount/total*100))+' %)</small></strong></div>').join('');
   return '<section class="card history-pie-card"><h2>'+title+'</h2>'+
-    '<div class="history-pie-layout"><div class="history-pie" role="img" aria-label="'+title+
-    '" style="background:conic-gradient('+segments.join(',')+')"><div class="history-pie-hole"></div></div>'+
+    '<div class="history-pie-layout">'+donut+
     '<div class="history-pie-legend">'+legend+'</div></div></section>';
 }
 export function renderHistory(args:{
@@ -163,9 +173,17 @@ export function renderHistory(args:{
     highlight('Höchster Ø-Einnahmebetrag nach Kategorie',topIncome?money(Math.round(topIncome.amount/topIncome.count),report):'–',
       topIncome?topIncome.name+' · je Buchung':'Keine Einnahmen')+'</section>';
   const max=Math.max(1,...report.months.flatMap(m=>[m.incomeMinor,m.expenseMinor]));
-  const bar=(kind:'income'|'expense',amount:number)=>'<div class="history-bar-line"><span>'+(kind==='income'?'Einnahmen':'Ausgaben')+
-    '</span><div class="history-bar-track">'+(amount>0?'<div class="history-bar '+(kind==='income'?'history-income-bar':'history-expense-bar')+
-    '" style="width:'+Math.min(100,Math.round(amount/max*100))+'%"></div>':'')+'</div><strong>'+esc(money(amount,report))+'</strong></div>';
+  const bar=(kind:'income'|'expense',amount:number)=>{
+    const width=Math.max(0,Math.min(100,amount/max*100));
+    const fill=kind==='income'?'#087e73':'#b96b20';
+    const barSvg='<svg class="history-bar-svg" viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true" focusable="false">'+
+      '<rect class="history-bar-track-svg" x="0" y="0" width="100" height="12" rx="6" fill="#e7eded"></rect>'+
+      (amount>0?'<rect class="history-bar '+(kind==='income'?'history-income-bar':'history-expense-bar')+
+        '" x="0" y="0" width="'+width.toFixed(3)+'" height="12" rx="6" fill="'+fill+'"></rect>':'')+
+      '</svg>';
+    return '<div class="history-bar-line"><span>'+(kind==='income'?'Einnahmen':'Ausgaben')+
+      '</span>'+barSvg+'<strong>'+esc(money(amount,report))+'</strong></div>';
+  };
   output+='<section class="card history-timeline-card"><h2>Monatsverlauf: Einnahmen und Ausgaben</h2>'+
     '<p class="muted small">Alle '+len+' Monate · Beträge in '+esc(currency)+'</p>'+
     '<div class="history-timeline">'+report.months.map(m=>'<div class="history-month-row"><div class="history-month-name">'+

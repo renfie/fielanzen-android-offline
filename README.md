@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Licensed under [GNU GPL v2 only](LICENSE).
 
-**Current source version (`developer`):** `0.1.0-alpha.35` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
+**Current source version (`developer`):** `0.1.0-alpha.36` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
 
 FieLanzen Offline is a separate Android application built with **TypeScript, Capacitor and SQLite**. Accounts, payees, categories, bookings, transfers, recurring rules and reports can be managed on the phone without a server. A separately enabled server mode connects to the [FieLanzen/Financisto Dashboard](https://github.com/renfie/financisto-dashboard) through its Mobile API. The two data sources are **not silently merged or synchronized**.
 
@@ -39,7 +39,7 @@ Use Node.js 22+, Java 21 and an Android SDK, or let the VM script install missin
 bash scripts/build-android-vm.sh
 ```
 
-Expected output: `release/FieLanzen-Offline-0.1.0-alpha.35-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
+Expected output: `release/FieLanzen-Offline-0.1.0-alpha.36-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
 
 **Important:** Make an external JSON backup before updating an installed app. Android updates require the **same signing key** and package ID. Do not uninstall the app or clear its data to work around a signature mismatch. See [German VM instructions](ANLEITUNG-ANDROID-DEBIAN.txt) and [installation guide](docs/INSTALLATION.en.md).
 
@@ -107,3 +107,7 @@ Local and server overviews now share selectable month A/B comparisons with curre
 ## Historical analysis (0.1.0-alpha.35, developer)
 
 The bottom navigation tab "Monat" has been replaced by **Historie**. Both local and server mode render the same native historical overview: selectable 2–36-month range, currency, account and category filters, period totals and averages, separate monthly income/expense bars and expense/income category donut charts. Locally, totals derive solely from on-device SQLite; future bookings are excluded. In server mode, complete monthly values come **only** from the authenticated Mobile API `/api/mobile/v1/reports/monthly` when `features.monthly_reports` is exactly `true`. If absent, incomplete, unavailable or unauthenticated, no cached bookings are treated as full-history totals. Highest individual income/expense will appear only when the Dashboard later supplies optional `highlights` fields; the UI clearly indicates their absence. No local data migration or server write endpoint change.
+
+## Android WebView charts (alpha.36, developer)
+
+Historical donut charts and proportional monthly bars now render as native inline SVG with explicit presentation attributes, rather than dynamically injected CSS `style` attributes. This works under the unchanged restrictive `style-src self` policy. Category legends use matching SVG color markers and the category list has tighter mobile spacing. Both local and server mode share the renderer; no changes to finance logic, Mobile API, local data, backups or server writes. Device display verification is pending.

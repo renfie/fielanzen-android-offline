@@ -2,6 +2,12 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## 0.1.0-alpha.36 (2026-11-26) – Fix history charts in Android WebView (developer)
+- Replace invisible CSS `conic-gradient` category charts with native SVG donut arcs; the app CSP blocks inline `style` attributes.
+- Monthly income/expense bars now use proportional SVG rectangles without forbidden inline width styles.
+- Improve category legend color swatches, alignment and mobile spacing while retaining all category rows.
+- Preserve the strict CSP (no `unsafe-inline`), offline operation, data isolation, backups and Mobile API semantics. On-device visual verification still pending.
+
 ## 0.1.0-alpha.35 (2026-11-26) – Historical analysis replaces monthly tab (developer)
 - Rename **Monat** to **Historie** and introduce the same historical layout in local and server modes: period KPIs, monthly income/expense bars, and expense/income category donut charts.
 - Filter by 2–36 months, account, category and currency. Local figures come exclusively from on-device SQLite.

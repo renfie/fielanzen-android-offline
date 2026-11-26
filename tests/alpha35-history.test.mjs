@@ -52,9 +52,10 @@ test('history matches web layout, includes full month bars and both donut charts
  for(const fragment of ['Historie','Filter und Zeitraum','Einnahmen gesamt','Ausgaben gesamt',
   'Saldo im Zeitraum','Buchungen im Zeitraum','Höchste Einzelausgabe','Höchster Ø-Ausgabebetrag',
   'Monatsverlauf: Einnahmen und Ausgaben','history-income-bar','history-expense-bar',
-  'Ausgaben nach Kategorie','Einnahmen nach Kategorie','conic-gradient','2026','0,00']){
+  'Ausgaben nach Kategorie','Einnahmen nach Kategorie','history-donut-segment','stroke-dasharray','2026','0,00']){
   assert.ok(html.includes(fragment),fragment);
  }
+ assert.doesNotMatch(html,/\\sstyle=/);
  assert.match(html,/Erfordert Erweiterung der Dashboard-API/);
  assert.doesNotMatch(html,/Nicht geladen/);
 });
@@ -112,5 +113,5 @@ test('server history and local history are wired with one renderer, and develope
  assert.match(server,/monthlySupported/);
  assert.match(source('src/dashboard-api.ts'),/monthlyReportsSupported/);
  assert.match(source('src/dashboard-api.ts'),/buildMonthlyPath/);
- assert.equal(JSON.parse(source('package.json')).version,'0.1.0-alpha.35');
+ assert.equal(JSON.parse(source('package.json')).version,'0.1.0-alpha.36');
 });

@@ -2,6 +2,13 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.36 (26.11.2026) – Diagramme in der Android-Historie repariert (developer)
+- Das leere Diagrammfeld über der Kategorienliste wurde behoben: Kreissegmente werden in Android WebView als SVG statt als durch die App-Sicherheitsrichtlinie gesperrter Inline-CSS-Farbverlauf gezeichnet.
+- Auch die Einnahmen-/Ausgabenbalken der Monatsübersicht verwenden jetzt SVG und korrekte proportionale Balkenbreiten ohne Inline-Style-Attribute.
+- Kategorienfarben in der Legende und die Abstände auf schmalen Displays wurden angepasst, ohne Kategorien auszublenden.
+- Die bestehende Content-Security-Policy bleibt streng; keine Freigabe von `unsafe-inline`, keine externen Diagrammbibliotheken.
+- Gemeinsame Anzeige lokal und Server; Datenmodelle, Backups, Buchungs-APIs und Dashboard bleiben unverändert. Geräteprüfung ausstehend.
+
 ## 0.1.0-alpha.35 (26.11.2026) – Historische Auswertung statt Monatsansicht (developer)
 - Der Reiter **„Monat“** wird zu **„Historie“**. Die Ansicht übernimmt die Struktur der mobilen Dashboard-Historie mit Kennzahlen, Monatsbalken sowie getrennten Kategorien-Kreisdiagrammen für Einnahmen und Ausgaben.
 - Gemeinsame Android-Oberfläche für lokale SQLite-Daten und autoritative Monatsdaten der Dashboard-Mobile-API. Filter für bis zu 36 Monate, Währung, Konto und Kategorie.
