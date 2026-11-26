@@ -42,7 +42,8 @@ test('copyright attribution and source license remain consistent',()=>{
   assert.match(read('README.md'),/Copyright © 2026 René Fieler \(RenFie\)/);
   assert.match(read('README.de.md'),/Copyright © 2026 René Fieler \(RenFie\)/);
   assert.match(read('LICENSE'),/GNU GENERAL PUBLIC LICENSE/);
-  assert.equal(JSON.parse(read('package.json')).version,'0.1.0-alpha.31');
-  assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.31'/);
+  const currentVersion=JSON.parse(read('package.json')).version;
+  assert.match(currentVersion, /^0\.1\.0-alpha\.\d+$/);
+  assert.ok(read('src/main.ts').includes("export const APP_VERSION='"+currentVersion+"'"));
   assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
 });

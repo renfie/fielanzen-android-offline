@@ -29,8 +29,8 @@ test('release workflow requires private signing secrets, verifies and publishes 
 });
 test('project version bumped while package ID remains compatible',()=>{
   const pkg=JSON.parse(read('package.json'));
-  assert.equal(pkg.version,'0.1.0-alpha.31');
+  assert.match(pkg.version, /^0\.1\.0-alpha\.\d+$/);
   assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
   assert.match(read('scripts/configure-android.py'),/version_code=int\(match.group\(1\)\)-1/);
-  assert.match(read('src/main.ts'),/APP_VERSION='0\.1\.0-alpha\.31'/);
+  assert.ok(read('src/main.ts').includes("export const APP_VERSION='"+pkg.version+"'"));
 });

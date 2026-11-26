@@ -2,19 +2,13 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
-## Entwicklerzweig (nach Alpha 31) – API-Vorbereitung für Serverregeln
-- Wiederkehrende Serverregeln: gleiche Darstellung wie lokal, mit Formular für Anlegen/Bearbeiten, Modi Pausiert/Manuell/Automatisch, gesicherter manueller Fälligkeitsbuchung und Soft-Delete-Anforderung.
-- Bestehender Dashboard-Regelbestand wird erst bei explizitem Feature-Flag geladen; alte API bleibt kompatibel und frei von unbeabsichtigten Schreibversuchen.
-- Dashboard-Vertrag mit JSON-Feldern, Endpunkten, Rechteprüfungen, Idempotenz, If-Match, Administratorfreigabe und Abnahmetests dokumentiert.
-- Weiterhin ausschließlich `developer` – keine Dashboard-Änderung, keine signierte Veröffentlichung und keine Veränderung lokaler Finanzdaten.
-
-## Entwicklerzweig (nach Alpha 31) – Einheitliche Oberfläche unabhängig von der Datenquelle
-- Gemeinsame Buchungskarten-Komponente für lokale und serverbasierte Buchungen: gleiches Layout, Farben, Kategorien, Statussymbole, Aufklappen und Schaltflächengrößen.
-- Dashboard-Startseite folgt der lokalen Übersicht mit Gesamtvermögen, einklappbaren Kontoständen, Monatsbereich und Buchungssuche; die serverseitige Buchungsübersicht erhält dieselbe Filter- und Sortierstruktur wie lokal.
-- Monatsberichte verwenden das lokale Darstellungsraster, kennzeichnen jedoch berechnete Werte aus nur geladenen API-Seiten als unvollständig. Wiederkehrende Serverregeln bleiben mangels Mobile-API unverfügbar; keine falsche Anzeige lokaler Regeln.
-- Server-Zugriffsrechte, revisionsgebundene Schreiboperationen, ausstehende Aufträge und Datenquellentrennung bleiben erhalten. Kein neues Finanzdatenformat und kein Dashboard-Update.
-- Noch **kein** Release: Änderungen nur auf developer, automatische Debug-APK zur Geräteprüfung.
-
+## 0.1.0-alpha.32 (26.11.2026) – Einheitliche Oberfläche und Vorbereitung wiederkehrender Serverregeln (developer)
+- **Einheitliche Oberfläche:** Lokale und serverbasierte Buchungen verwenden gemeinsame Buchungskarten mit gleichen Farben, Statussymbolen, Abständen, einklappbaren Details und Schaltflächengrößen.
+- **Serverübersicht:** Gleiche Struktur wie lokal mit Kontoständen, Monatsbereich, Buchungssuche sowie Filter- und Sortiermöglichkeiten. Auswertungen auf Grundlage nur geladener API-Seiten werden als möglicherweise unvollständig gekennzeichnet.
+- **Wiederkehrende Serverregeln:** Android-Oberfläche für Anzeigen, Anlegen, Bearbeiten, Pausieren, manuelle/automatische Modi, bestätigte fällige Buchungen und Archivierung vorbereitet. Lokale Regeln bleiben strikt getrennt.
+- **API-Abhängigkeit:** Die Funktionen bleiben deaktiviert, bis das Dashboard die vollständige Mobile-API unter `features.recurring_rules: true` freigibt. Der API-Vertrag einschließlich Rechten, Administratorfreigabe, `If-Match` und Idempotenz ist dokumentiert; die Server-Endpunkte werden dadurch noch nicht bereitgestellt.
+- **Sicherheit und Datenbestand:** Bestehende Berechtigungsprüfungen, ausstehende Schreibaufträge und getrennte Datenquellen bleiben erhalten. Keine Migration lokaler Finanzdaten und keine Änderung des Finanzbackups oder Dashboards.
+- **Veröffentlichung:** Ausschließlich Entwicklungsstand auf `developer` mit Debug-Test-APK, kein signierter Release auf `main`. Die Android-Geräteprüfung steht aus.
 
 ## 0.1.0-alpha.31 (23.11.2026) – Copyright und Quellcode-Hinweise
 - Eigener Quellcode, native Android-Klassen, Skripte und Tests mit `SPDX-License-Identifier: GPL-2.0-only` sowie `Copyright (C) 2026 René Fieler (RenFie)` gekennzeichnet, passend zur jeweiligen Dateisyntax. Drittanbieter- und generierter Code bleibt unverändert.

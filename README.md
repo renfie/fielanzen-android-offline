@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Licensed under [GNU GPL v2 only](LICENSE).
 
-**Current source version:** `0.1.0-alpha.31` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
+**Current source version (`developer`):** `0.1.0-alpha.32` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
 
 FieLanzen Offline is a separate Android application built with **TypeScript, Capacitor and SQLite**. Accounts, payees, categories, bookings, transfers, recurring rules and reports can be managed on the phone without a server. A separately enabled server mode connects to the [FieLanzen/Financisto Dashboard](https://github.com/renfie/financisto-dashboard) through its Mobile API. The two data sources are **not silently merged or synchronized**.
 
@@ -39,7 +39,7 @@ Use Node.js 22+, Java 21 and an Android SDK, or let the VM script install missin
 bash scripts/build-android-vm.sh
 ```
 
-Expected output: `release/FieLanzen-Offline-0.1.0-alpha.30-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
+Expected output: `release/FieLanzen-Offline-0.1.0-alpha.32-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
 
 **Important:** Make an external JSON backup before updating an installed app. Android updates require the **same signing key** and package ID. Do not uninstall the app or clear its data to work around a signature mismatch. See [German VM instructions](ANLEITUNG-ANDROID-DEBIAN.txt) and [installation guide](docs/INSTALLATION.en.md).
 

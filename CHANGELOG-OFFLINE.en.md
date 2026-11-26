@@ -2,18 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
-## Developer branch (after Alpha 31) – Prepared recurring server-rule API
-- Local-style rule controls for server mode: create, edit, Paused/Manual/Automatic status, explicitly confirmed due manual posting, soft-delete request.
-- Backward-compatible capability gate keeps these controls inactive until the Dashboard advertises the complete recurring API.
-- JSON endpoint, permissions, If-Match, idempotency and admin-only automation contract with backend acceptance tests documented.
-- Only in `developer`: no Dashboard changes, signed release or local ledger migration.
-
-## Developer branch (after Alpha 31) – Unified local and server UI
-- Local and server bookings share one card renderer, spacing, colors, tags, collapsed details, and action-button sizing.
-- Server overview and booking screens follow the local section order, account disclosure, month summary, search, and advanced filter controls.
-- Server reports retain the local visual layout while clearly marking totals computed from only fetched API pages as potentially incomplete. The current Mobile API does not provide server recurring rules; the app does not substitute local rules.
-- Authenticated server permissions, revision-checked writes, pending-operation protection, and separate local/server ledgers remain intact. No dashboard changes or signed release yet; test APK builds on developer.
-
+## 0.1.0-alpha.32 (2026-11-26) – Unified UI and server recurring-rule preparation (developer)
+- **Unified interface:** Local and server bookings share cards, colors, status tags, spacing, collapsible details and action sizes.
+- **Server overview:** Matches the local section order for accounts, monthly summaries, booking search, filtering and sorting. Reports based on fetched API pages are marked as potentially incomplete.
+- **Server recurring rules:** Android UI is prepared to view, create, edit, pause, select Manual/Automatic modes, confirm due postings, and archive rules. Local rules remain separate.
+- **API dependency:** These controls stay disabled until the Dashboard exposes the full Mobile API with `features.recurring_rules: true`. The backend contract describes authorization, admin approval, `If-Match` and idempotency; these endpoints are not supplied by this Android change.
+- **Safety and compatibility:** Existing permissions, pending-write protections and separate data sources remain intact. No local finance-data migration or changes to backup formats or the Dashboard.
+- **Release status:** Developer branch only, debug test APK; no signed release on `main`. Real-device verification is still pending.
 
 ## 0.1.0-alpha.31 (2026-11-23) – Copyright and SPDX source headers
 - Original TypeScript, Java, scripts, workflows and test sources now carry GPL-2.0-only SPDX and `Copyright (C) 2026 René Fieler (RenFie)` notices with syntax appropriate to each file. Generated code and third-party dependencies remain separately attributed.
