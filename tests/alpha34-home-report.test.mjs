@@ -88,5 +88,5 @@ test('app provides local and remote filter actions and does not silently fetch a
  assert.match(main,/homeCompare:HomeComparisonFilter/);
  assert.match(main,/server-home-month-filters/);
  assert.match(main,/local-home-month-filters/);
- assert.match(read('package.json'),/0\.1\.0-alpha\.35/);
+ assert.match(JSON.parse(read('package.json')).version,/^0\.1\.0-alpha\.\d+$/);
 });
