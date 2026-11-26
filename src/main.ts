@@ -44,7 +44,7 @@ import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.2.0';
+export const APP_VERSION='0.2.1';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;

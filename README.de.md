@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Lizenziert unter [GNU GPL v2 ausschließlich](LICENSE).
 
-**Aktuelle Version:** `0.2.0` · **Release:** reguläre Version · **Android-Paketkennung:** `de.fielanzen.offline`
+**Aktuelle Version:** `0.2.1` · **Release:** reguläre Version · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 

@@ -12,18 +12,18 @@ import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
-test('regular 0.2.0 source and Android identity agree',()=>{
+test('regular 0.2.1 source and Android identity agree',()=>{
  const pkg=JSON.parse(read('package.json'));
- assert.equal(pkg.version,'0.2.0');
- assert.match(read('src/main.ts'),/export const APP_VERSION='0\.2\.0'/);
+ assert.equal(pkg.version,'0.2.1');
+ assert.match(read('src/main.ts'),/export const APP_VERSION='0\.2\.1'/);
  assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
  const native=read('scripts/configure-android.py');
  assert.match(native,/stable=re\.fullmatch/);
  assert.match(native,/version_code=major\*1000000\+minor\*10000\+patch\*100/);
  assert.match(native,/version_code=int\(alpha\.group\(1\)\)-1/);
- const major=0,minor=2,patch=0;
- assert.equal(major*1000000+minor*10000+patch*100,20000);
- assert.ok(20000>36,'stable code must exceed signed alpha.37');
+ const major=0,minor=2,patch=1;
+ assert.equal(major*1000000+minor*10000+patch*100,20100);
+ assert.ok(20100>20000,'patch release versionCode must exceed installed 0.2.0');
 });
 
 test('release workflow creates regular releases and enforces SemVer ordering',()=>{
@@ -39,10 +39,10 @@ test('release workflow creates regular releases and enforces SemVer ordering',()
  assert.match(ci,/ANDROID_KEYSTORE_BASE64/);
 });
 
-test('0.2.0 release notes are substantive and bilingual',()=>{
- const notes=read('docs/releases/v0.2.0.md');
- for(const heading of ['## Änderungen (Deutsch)','## Changes (English)','Historie',
-   'Kontostandsabgleich','Wiederkehrende Regeln','SVG','20000','SHA256']){
+test('0.2.1 release notes are substantive and bilingual',()=>{
+ const notes=read('docs/releases/v0.2.1.md');
+ for(const heading of ['## Änderungen (Deutsch)','## Changes (English)','Saldoanpassung',
+   'Löschauftrag','UUID','20100','SHA256']){
    assert.ok(notes.includes(heading),heading);
  }
  assert.ok(notes.length>1500);
@@ -51,7 +51,7 @@ test('0.2.0 release notes are substantive and bilingual',()=>{
 test('historical alpha release notes use each version’s actual changelog entry',()=>{
  const dir=mkdtempSync(join(tmpdir(),'fielanzen-release-'));
  try{
-   for(const v of ['v0.1.0-alpha.29','v0.1.0-alpha.30','v0.1.0-alpha.31','v0.1.0-alpha.37','v0.2.0']){
+   for(const v of ['v0.1.0-alpha.29','v0.1.0-alpha.30','v0.1.0-alpha.31','v0.1.0-alpha.37','v0.2.0','v0.2.1']){
      const dest=join(dir,v+'.md');
      const runner=spawnSync(process.execPath,['scripts/release-notes.mjs',v,dest],{
        cwd:new URL('..',import.meta.url),encoding:'utf8'

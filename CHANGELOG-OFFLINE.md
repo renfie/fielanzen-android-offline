@@ -2,12 +2,12 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
-## Unveröffentlicht (developer) – Löschaufträge über die Mobile-API
+## 0.2.1 (26.11.2026) – Fehlerkorrektur: Löschung von Serverbuchungen
 - Android-Fehler behoben: Bei `DELETE /api/mobile/v1/bookings/{id}` wird auch dann ein gültiges leeres JSON-Objekt übertragen, wenn der verschlüsselt gespeicherte Auftrag bisher `data: null` enthält. Der Server erwartet ein JSON-Objekt; UUID, Revision und Ziel bleiben unverändert.
 - Archivieren von Serverregeln sendet weiterhin den notwendigen `confirm_title` und wird durch die Änderung nicht beeinflusst.
 - Fehlerantworten des Servers nennen jetzt zusätzlich dessen konkrete Begründung (falls vorhanden) und offene Schreibaufträge zeigen die Ziel-API-Adresse.
 - Vor der ausdrücklichen Wiederholung eines Löschauftrags fordert die App eine Kontrolle des Serverzustands und eine Bestätigung. Kein automatischer Wiederholungsversuch; unklare Ergebnisse bleiben gesperrt.
-- Ausschließlich `developer` als Teständerung auf Basis von 0.2.0; `main` und signiertes Release bleiben unverändert.
+- Reguläre Wartungsversion 0.2.1 auf Basis von 0.2.0 mit unveränderter Paketkennung und demselben Release-Signaturzertifikat. Android-versionCode 20100 (zuvor 20000), keine Migration der Finanzdaten.
 
 ## 0.2.0 (26.11.2026) – Erstes reguläres Android-Release
 - Entwicklungsfunktionen aus Alpha 32–37 als reguläre Version 0.2.0 zusammengefasst: einheitliche Oberfläche, Monatsvergleich, Historie mit SVG-Diagrammen, wiederkehrende Serverregeln und direkter Kontostandsabgleich.

@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Licensed under [GNU GPL v2 only](LICENSE).
 
-**Current version:** `0.2.0` · **Release:** standard · **Android package ID:** `de.fielanzen.offline`
+**Current version:** `0.2.1` · **Release:** standard · **Android package ID:** `de.fielanzen.offline`
 
 FieLanzen Offline is a separate Android application built with **TypeScript, Capacitor and SQLite**. Accounts, payees, categories, bookings, transfers, recurring rules and reports can be managed on the phone without a server. A separately enabled server mode connects to the [FieLanzen/Financisto Dashboard](https://github.com/renfie/financisto-dashboard) through its Mobile API. The two data sources are **not silently merged or synchronized**.
 
