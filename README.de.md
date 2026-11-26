@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Lizenziert unter [GNU GPL v2 ausschließlich](LICENSE).
 
-**Aktueller Quellstand (`developer`):** `0.1.0-alpha.33` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
+**Aktueller Quellstand (`developer`):** `0.1.0-alpha.34` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 
@@ -39,7 +39,7 @@ Benötigt werden Node.js 22+, Java 21 und ein Android SDK. Das VM-Skript kann fe
 bash scripts/build-android-vm.sh
 ```
 
-Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.33-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
+Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.34-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
 
 **Vor jedem Update:** Vollständige JSON-Sicherung außerhalb der App erstellen. Zur Aktualisierung müssen **Paketkennung und Signaturschlüssel identisch** sein. Nicht deinstallieren und keine App-Daten löschen, um einen Signaturfehler zu umgehen. Siehe [VM-Anleitung](ANLEITUNG-ANDROID-DEBIAN.txt) und [Installationsanleitung](docs/INSTALLATION.de.md).
 
@@ -99,3 +99,7 @@ Die Android-Serveransicht ist für die geplante Dashboard-Mobile-API zur Verwalt
 ## Tastaturfreundliche Auswahl bei Empfängern und Kategorien (Alpha 33, developer)
 
 Buchungen und wiederkehrende Regeln nutzen lokal wie im Servermodus eine kompakte Vorschlagsliste, die sich am tatsächlich sichtbaren Android-Bildschirmbereich ausrichtet. Häufige Namen und passende Wortanfänge werden bevorzugt; weitere Treffer sind scrollbar. Neue Empfänger lassen sich weiterhin frei eingeben, Kategorien bleiben an ihre bisherige Auswahl- und lokale Neuanlagelogik gebunden. Dashboard-API, Finanzdaten und Backups werden nicht geändert. Der echte Gerätetest steht noch aus.
+
+## Monatsvergleich und korrekter Serververlauf (Alpha 34, developer)
+
+Auf den Startseiten beider Modi lassen sich nun zwei Vergleichsmonate, Währung, Konto und Kategorie auswählen. Einnahmen/Ausgaben erscheinen zusätzlich als kompakte Grafik. Im Servermodus sind die Kontostände nach Status geordnet; der Kontostandsabgleich öffnet das Dashboard, da die Mobile-API noch keinen abgesicherten Endpunkt für diesen Schreibvorgang bietet. Im Reiter „Monat“ werden nicht geladene Monate nicht mehr als sichere Nullwerte mit vollen Balken dargestellt. Teilwerte sind ausdrücklich vorläufig; über eine Schaltfläche können jeweils bis zu drei weitere Buchungsseiten geladen werden. Für vollständige historische Vergleiche ohne umfangreiches Nachladen wäre eine eigene serverseitige Summen-API nötig. Gerätetest steht aus.

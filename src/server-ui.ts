@@ -7,6 +7,7 @@
 import type {RemoteAccount,RemoteBooking,RemoteCategory,DashboardSession,PendingWrite,RemotePayee} from './dashboard-protocol.js';
 import {readBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {bookingCardHtml} from './booking-card-ui.js';
+import {renderHomeComparison,calendarMonth,type HomeComparisonFilter} from './home-comparison.js';
 import type {ServerRecurringRule} from './server-recurring.js';
 export type ServerPeriod='7'|'30'|'90'|'180'|'all';
 export interface ServerViewData {
@@ -16,7 +17,8 @@ export interface ServerViewData {
   expandedBookingId:number|null;balancesOpen:boolean;filtersOpen:boolean;
   period:ServerPeriod;periodExplicit:boolean;kindFilter:'all'|RemoteBooking['kind'];
   accountFilter:string;categoryFilter:string;dateFrom:string;dateTo:string;
-  reportMonth:string;reportAccountFilter:string;
+  reportMonth:string;reportAccountFilter:string;reportCurrencyFilter:string;
+  homeCompare:HomeComparisonFilter;homeFiltersOpen:boolean;
   recurringSupported:boolean;recurringLoaded:boolean;recurringLoading:boolean;
   recurringRules:ServerRecurringRule[];recurringError:string;
 }
@@ -29,7 +31,8 @@ export const emptyServerData=():ServerViewData=>({
   error:'',loading:false,pending:null,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,
   searchHome:'',searchBookings:'',expandedBookingId:null,balancesOpen:false,filtersOpen:false,
   period:'30',periodExplicit:false,kindFilter:'all',accountFilter:'all',categoryFilter:'all',
-  dateFrom:'',dateTo:'',reportMonth:currentMonth(),reportAccountFilter:'all',
+  dateFrom:'',dateTo:'',reportMonth:currentMonth(),reportAccountFilter:'all',reportCurrencyFilter:'EUR',
+  homeCompare:{first:currentMonth(),second:calendarMonth(currentMonth(),-1),currency:'EUR',account:'all',category:'all'},homeFiltersOpen:false,
   recurringSupported:false,recurringLoaded:false,recurringLoading:false,recurringRules:[],recurringError:''
 });
 const esc=(v:unknown):string=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -143,11 +146,18 @@ function offsetMonth(ym:string,delta:number):string {
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
 function monthlyServerRows(data:ServerViewData,ym:string):RemoteBooking[]{
-  return data.bookings.filter(b=>b.date.startsWith(ym)&&
+  const currencyAccounts=new Set(data.accounts.filter(a=>a.currency===data.reportCurrencyFilter).map(a=>a.id));
+  return data.bookings.filter(b=>b.date.startsWith(ym)&&currencyAccounts.has(b.accountId)&&
     (data.reportAccountFilter==='all'||b.accountId===Number(data.reportAccountFilter)||(b.kind==='transfer'&&b.toAccountId===Number(data.reportAccountFilter))));
+}
+function formatReportSum(cents:number,data:ServerViewData):string{
+  const account=data.accounts.find(a=>a.currency===data.reportCurrencyFilter);
+  return formatMinor(cents,account);
 }
 function serverMonthReportHtml(data:ServerViewData,ym:string):string{
   const rows=monthlyServerRows(data,ym);
+  if(data.nextBefore!==null&&rows.length===0)
+    return `<div class="report-month"><h2>${esc(monthLabel(ym))}</h2><p class="notice">Für diesen Monat sind noch keine vollständigen Serverdaten geladen. Ein fehlender Betrag ist nicht 0 €.</p></div>`;
   const income=rows.filter(b=>b.kind==='income').reduce((v,b)=>v+b.amountMinor,0);
   const expense=rows.filter(b=>b.kind==='expense').reduce((v,b)=>v+b.amountMinor,0);
   const expenseCategories=new Map<number,number>();
@@ -159,15 +169,15 @@ function serverMonthReportHtml(data:ServerViewData,ym:string):string{
   const maxCategory=Math.max(1,...expenseCategories.values());
   const categories=new Map(data.categories.map(c=>[c.id,c.name]));
   return `<div class="report-month"><h2>${esc(monthLabel(ym))}</h2>
-    <div class="report-metrics"><div><span>Einnahmen</span><strong class="income">+${esc(formatServerSum(income,data))}</strong></div>
-      <div><span>Ausgaben</span><strong class="expense">−${esc(formatServerSum(expense,data))}</strong></div>
-      <div class="report-net"><span>Saldo</span><strong class="${income-expense<0?'expense':'income'}">${esc(formatServerSum(income-expense,data))}</strong></div></div>
+    <div class="report-metrics"><div><span>Einnahmen</span><strong class="income">+${esc(formatReportSum(income,data))}</strong></div>
+      <div><span>Ausgaben</span><strong class="expense">−${esc(formatReportSum(expense,data))}</strong></div>
+      <div class="report-net"><span>Saldo</span><strong class="${income-expense<0?'expense':'income'}">${esc(formatReportSum(income-expense,data))}</strong></div></div>
     <h3>Ausgaben nach Kategorien</h3>
     ${expenseCategories.size?[...expenseCategories].sort((x,y)=>y[1]-x[1]).map(([id,v])=>`<div class="report-category">
-      <div class="report-line"><span>${esc(categories.get(id)??'Ohne Kategorie')}</span><strong>${esc(formatServerSum(v,data))}</strong></div>
+      <div class="report-line"><span>${esc(categories.get(id)??'Ohne Kategorie')}</span><strong>${esc(formatReportSum(v,data))}</strong></div>
       <div class="report-meter"><span style="width:${Math.max(1,Math.round(v/maxCategory*100))}%"></span></div></div>`).join(''):'<p class="muted small">Keine geladenen Ausgaben.</p>'}
     <h3>Einnahmen nach Kategorien</h3>
-    ${incomeCategories.size?[...incomeCategories].sort((x,y)=>y[1]-x[1]).map(([id,v])=>`<div class="report-line"><span>${esc(categories.get(id)??'Ohne Kategorie')}</span><strong>${esc(formatServerSum(v,data))}</strong></div>`).join(''):'<p class="muted small">Keine geladenen Einnahmen.</p>'}
+    ${incomeCategories.size?[...incomeCategories].sort((x,y)=>y[1]-x[1]).map(([id,v])=>`<div class="report-line"><span>${esc(categories.get(id)??'Ohne Kategorie')}</span><strong>${esc(formatReportSum(v,data))}</strong></div>`).join(''):'<p class="muted small">Keine geladenen Einnahmen.</p>'}
     <p class="muted small">${rows.length} geladene Buchungen in diesem Monat; ${rows.filter(b=>b.kind==='transfer').length} Umbuchungen (separat).</p></div>`;
 }
 function serverReportsHtml(data:ServerViewData):string{
@@ -175,28 +185,42 @@ function serverReportsHtml(data:ServerViewData):string{
   const trend=Array.from({length:12},(_,i)=>{
     const month=offsetMonth(ym,i-11);
     const rows=monthlyServerRows(data,month);
-    return {month,income:rows.filter(b=>b.kind==='income').reduce((v,b)=>v+b.amountMinor,0),
+    return {month,count:rows.length,income:rows.filter(b=>b.kind==='income').reduce((v,b)=>v+b.amountMinor,0),
       expense:rows.filter(b=>b.kind==='expense').reduce((v,b)=>v+b.amountMinor,0)};
   });
-  const max=Math.max(1,...trend.map(x=>x.income+x.expense));
-  const accountOptions=data.accounts.map(a=>`<option value="${a.id}" ${data.reportAccountFilter===String(a.id)?'selected':''}>${esc(a.name)}</option>`).join('');
+  const max=Math.max(1,...trend.map(x=>Math.max(0,x.income,x.expense)));
+  const complete=data.nextBefore===null;
+  const currencies=[...new Set(data.accounts.map(a=>a.currency))].sort();
+  const currencyOptions=currencies.map(c=>`<option value="${esc(c)}" ${data.reportCurrencyFilter===c?'selected':''}>${esc(c)}</option>`).join('');
+  const accountOptions=data.accounts.filter(a=>a.currency===data.reportCurrencyFilter).map(a=>`<option value="${a.id}" ${data.reportAccountFilter===String(a.id)?'selected':''}>${esc(a.name)}</option>`).join('');
+  const rowHtml=trend.map(t=>{
+    const title=esc(monthLabel(t.month));
+    if(!complete&&!t.count)return `<div class="trend-row trend-unknown"><span>${title}</span>
+      <div class="trend-bars"><small class="muted">Nicht geladen</small></div><strong>–</strong></div>`;
+    return `<div class="trend-row"><span>${title}</span>
+      <div class="trend-bars">${t.income>0?`<i class="trend-income" style="width:${Math.round(t.income/max*100)}%"></i>`:''}
+      ${t.expense>0?`<i class="trend-expense" style="width:${Math.round(t.expense/max*100)}%"></i>`:''}</div>
+      <strong class="${t.income-t.expense<0?'expense':'income'}">${esc(formatReportSum(t.income-t.expense,data))}${complete?'':'*'}</strong></div>`;
+  }).join('');
   return `<section class="intro"><div><div class="eyebrow">Monatliche Auswertung</div><h1>Monatsbericht</h1></div>
     <button class="btn secondary no-print" data-action="print-report">Drucken</button></section>
     <section class="card no-print"><div class="report-toolbar">
       <button class="btn secondary" data-action="server-previous-report-month" aria-label="Vormonat">‹</button>
       <label class="field">Monat auswählen<input id="server-report-month" type="month" value="${esc(ym)}"></label>
       <button class="btn secondary" data-action="server-next-report-month" aria-label="Folgemonat">›</button></div>
+      <label class="field">Währung<select id="server-report-currency-filter">${currencyOptions}</select></label>
       <label class="field">Kontofilter<select id="server-report-account-filter"><option value="all">Alle Konten</option>${accountOptions}</select></label>
-      <p class="notice">Vorläufige Auswertung ausschließlich der ${data.bookings.length} geladenen Serverbuchungen. Die Mobile-API stellt noch keinen vollständigen Monatsbericht bereit; ältere Buchungen können fehlen. ${groupCurrency(data).size>1?'Bei mehreren Währungen werden Beträge nicht fälschlich zusammengerechnet.':''}</p>
+      ${complete?'<p class="muted small">Alle Buchungsseiten geladen; die Auswertung erfolgt aus diesem Datenbestand.</p>':
+       `<p class="notice">Vorläufige Auswertung: ${data.bookings.length} Serverbuchungen geladen. Die Mobile-API stellt noch keinen eigenständigen Monatsbericht bereit; ältere Buchungen fehlen gegebenenfalls.</p>`}
     </section>
-    <section class="card"><div class="section-title"><h2>Haushaltsauswertung</h2><span class="muted">2 Monate · geladen</span></div>
+    <section class="card"><div class="section-title"><h2>Haushaltsauswertung</h2><span class="muted">2 Monate · ${complete?'vollständig geladen':'vorläufig'}</span></div>
       <div class="report-grid">${serverMonthReportHtml(data,ym)}${serverMonthReportHtml(data,offsetMonth(ym,-1))}</div></section>
     <section class="card"><div class="section-title"><h2>Verlauf</h2><span class="muted">12 Monate bis ${esc(monthLabel(ym))}</span></div>
       <div class="trend-legend"><span class="trend-income-mark">Einnahmen</span><span class="trend-expense-mark">Ausgaben</span></div>
-      <div class="trend-list">${trend.map(t=>`<div class="trend-row"><span>${esc(monthLabel(t.month))}</span>
-        <div class="trend-bars"><i class="trend-income" style="width:${Math.round(t.income/max*100)}%"></i><i class="trend-expense" style="width:${Math.round(t.expense/max*100)}%"></i></div>
-        <strong class="${t.income-t.expense<0?'expense':'income'}">${esc(formatServerSum(t.income-t.expense,data))}</strong></div>`).join('')}</div>
-      <p class="muted small">Trend aus geladenen Serverseiten; Monate ohne geladene Buchungen sind nicht zwangsläufig buchungsfrei.</p></section>`;
+      <div class="trend-list">${rowHtml}</div>
+      ${complete?'<p class="muted small">Historie der vollständig geladenen Buchungen; Umbuchungen sind separat.</p>':
+        '<p class="notice">* Vorläufige Werte. Ein Strich bedeutet nicht vollständig geladen, nicht 0 €. Die Balken zeigen ausschließlich bereits geladene Buchungen.</p><button type="button" class="btn secondary" data-action="server-more-history">Weitere historische Buchungen laden</button>'}
+      </section>`;
 }
 const recurringFrequency=(f:ServerRecurringRule['frequency']):string=>
   ({daily:'Täglich',weekly:'Wöchentlich',monthly:'Monatlich',quarterly:'Vierteljährlich',yearly:'Jährlich'}[f]);
@@ -275,36 +299,40 @@ export function serverPageHtml(data:ServerViewData,screen:'home'|'bookings'|'rec
   const prefs=readBookingList();
   const canWrite=Boolean(data.session?.canWrite&&!data.pending);
   if(screen==='home'){
-    const totals=new Map<string,{cents:number;sample:RemoteAccount}>();
-    for(const a of data.accounts){
-      if(!a.includedInTotal)continue;
-      const old=totals.get(a.currency);
-      totals.set(a.currency,{cents:(old?.cents??0)+a.balanceMinor,sample:a});
-    }
-    const single=totals.size===1?[...totals.values()][0]:null;
-    const overall=single?formatMinor(single.cents,single.sample):totals.size>1?'Mehrere Währungen':'–';
-    const month=currentMonth();
-    const monthly=data.bookings.filter(b=>b.date.startsWith(month));
-    const income=monthly.filter(b=>b.kind==='income').reduce((v,b)=>v+b.amountMinor,0);
-    const expense=monthly.filter(b=>b.kind==='expense').reduce((v,b)=>v+b.amountMinor,0);
-    const accounts=data.accounts.map(a=>`<div class="account"><div class="account-name">${esc(a.name)}</div>
+    const selectedCurrency=data.accounts.some(a=>a.currency===data.homeCompare.currency)
+      ?data.homeCompare.currency:(data.accounts[0]?.currency??'EUR');
+    const currencyAccounts=data.accounts.filter(a=>a.currency===selectedCurrency);
+    const known=currencyAccounts.filter(a=>a.includedInTotal);
+    const unknownTotal=known.some(a=>!Number.isSafeInteger(a.balanceMinor));
+    const sum=known.reduce((n,a)=>n+(Number.isSafeInteger(a.balanceMinor)?a.balanceMinor:0),0);
+    const overall=unknownTotal?'Saldo nicht verfügbar':known.length?formatMinor(sum,known[0]):'–';
+    const sortedAccounts=[...currencyAccounts].sort((a,b)=>{
+      const group=(x:RemoteAccount)=>x.balanceMinor===0?3:!Number.isSafeInteger(x.balanceMinor)?2:!x.active?1:0;
+      return group(a)-group(b)||a.name.localeCompare(b.name,'de');
+    });
+    const accounts=sortedAccounts.map(a=>`<div class="account"><div class="account-name">${esc(a.name)}
+      ${!a.active?'<small class="account-status">Inaktiv</small>':''}${!a.includedInTotal?'<small class="account-status">Nicht in Summe</small>':''}</div>
       <div class="account-value ${a.balanceMinor<0?'expense':''}">${esc(formatMinor(a.balanceMinor,a))}</div></div>`).join('');
     const homeResults=displayedServerBookings(data,'home');
+    const comparison=renderHomeComparison({
+      prefix:'server-home',filter:{...data.homeCompare,currency:selectedCurrency},
+      accounts:data.accounts,categories:data.categories,bookings:data.bookings,
+      complete:data.nextBefore===null,defaultCurrency:selectedCurrency,filtersOpen:data.homeFiltersOpen
+    });
     return `${status}<section class="intro"><div><div class="eyebrow">Deine Finanzen im Blick</div><h1>Übersicht</h1>
         <div class="muted small">Alle Daten vom Dashboard-Server</div></div>
         <button class="btn primary" data-action="server-add-booking" ${canWrite?'':'disabled'}>+ Buchung</button></section>
-      <section class="card"><div class="section-title"><h2>Gesamtvermögen</h2><span class="muted">Alle Konten</span></div>
-        <div class="balance-total ${single&&single.cents<0?'expense':''}">${esc(overall)}</div>
-        ${totals.size>1?`<div class="muted small">${[...totals.values()].map(x=>esc(formatMinor(x.cents,x.sample))).join(' · ')} (getrennte Währungen)</div>`:''}</section>
+      <section class="card"><div class="section-title"><h2>Gesamtvermögen</h2><span class="muted">${esc(selectedCurrency)}</span></div>
+        <div class="balance-total ${sum<0?'expense':''}">${esc(overall)}</div></section>
       <details class="card account-disclosure" id="server-home-account-balances" ${data.balancesOpen?'open':''}>
-        <summary class="disclosure-toggle"><span><strong>Kontostände</strong><small>${data.accounts.length} Konten · Gesamt ${esc(overall)}</small></span>
+        <summary class="disclosure-toggle"><span><strong>Kontostände</strong><small>${currencyAccounts.length} Konten · ${esc(overall)}</small></span>
         <span class="disclosure-chevron" aria-hidden="true">⌄</span></summary>
-        <div class="disclosure-body"><div class="accounts">${accounts||'<div class="empty">Keine Serverkonten vorhanden.</div>'}</div></div>
+        <div class="disclosure-body"><div class="accounts">${accounts||'<div class="empty">Keine Serverkonten für diese Währung vorhanden.</div>'}</div>
+        <p class="muted small">Kontostände gelten bis heute; künftige Buchungen bleiben separate Prognosen.</p>
+        ${data.session?.canWrite?`<p><a class="btn secondary" href="${esc((data.server.endsWith('/')?data.server.slice(0,-1):data.server)+'/#kontostaende')}" target="_blank" rel="noopener noreferrer">Kontostand im Dashboard abgleichen</a></p>
+        <p class="muted small">Der Saldoabgleich benötigt eine eigene Serverfunktion und erfolgt derzeit im Dashboard-Browser.</p>`:''}</div>
       </details>
-      <section class="card"><div class="section-title"><h2>Dieser Monat</h2><span class="muted">${esc(monthLabel(month))}</span></div>
-        <div class="stats"><div><strong class="income">+${esc(formatServerSum(income,data))}</strong><span>Einnahmen</span></div>
-          <div><strong class="expense">−${esc(formatServerSum(expense,data))}</strong><span>Ausgaben</span></div></div>
-        <p class="muted small">Monatswerte nur aus ${monthly.length} geladenen Serverbuchungen. Für vollständige Monatsberichte ist eine erweiterte API erforderlich.</p></section>
+      ${comparison}
       <section class="card"><div class="section-title"><h2>Buchungen</h2><span class="muted small" id="server-home-booking-count">${homeResults.length} Treffer</span></div>
         <div class="booking-quick-bar"><label class="field" for="server-home-search">Buchungen durchsuchen
           <input id="server-home-search" type="search" autocomplete="off" placeholder="Empfänger, Kategorie, Konto, Notiz, Betrag …" value="${esc(data.searchHome)}"></label></div>

@@ -41,7 +41,7 @@ test('LOCAL and SERVER use one booking card renderer and identical styling',()=>
 test('server home and bookings have the same local component structure',()=>{
   const data=sample();
   const home=serverPageHtml(data,'home');
-  for(const value of ['<h1>Übersicht</h1>','Gesamtvermögen','Kontostände','account-disclosure','Dieser Monat','id="server-home-search"','class="booking-entry','id="server-booking-results"']){
+  for(const value of ['<h1>Übersicht</h1>','Gesamtvermögen','Kontostände','account-disclosure','Monatsvergleich','Filter und Zeitraum','id="server-home-search"','class="booking-entry','id="server-booking-results"']){
     assert.ok(home.includes(value),value);
   }
   const list=serverPageHtml(data,'bookings');
@@ -90,6 +90,7 @@ test('server search, category/account/type/date filters only use loaded pages',(
 
 test('report and recurring pages match local layout but clearly mark API limits',()=>{
   const data=sample();
+  data.nextBefore='200'; // Verify warning for incompletely paged mobile reports.
   const report=serverPageHtml(data,'reports');
   for(const heading of ['Monatsbericht','Haushaltsauswertung','report-grid','report-month','Ausgaben nach Kategorien',
     'Einnahmen nach Kategorien','trend-list','server-report-month','server-report-account-filter','Vorläufige Auswertung']){
@@ -109,8 +110,10 @@ test('different currencies are never silently added together',()=>{
   const data=sample();
   data.accounts.push({...account,id:20,name:'Dollar',currency:'USD',symbol:'$',balanceMinor:9999});
   const overview=serverPageHtml(data,'home');
-  assert.match(overview,/Mehrere Währungen/);
-  assert.match(overview,/getrennte Währungen/);
+  assert.match(overview,/Monatsvergleich/);
+  assert.match(overview,/server-home-currency/);
+  assert.match(overview,/EUR/);
+  assert.doesNotMatch(overview,/Mehrere Währungen/);
 });
 
 test('html escaping prevents server titles and notes from becoming markup',()=>{

@@ -37,5 +37,5 @@ test('both local and server booking/rule editors share viewport-aware suggestion
   assert.match(main,/rankSuggestions\(items\(\),query,7/);
   assert.match(read('style.css'),/\.keyboard-aware-menu/);
   assert.match(read('src/suggestion-ui.ts'),/visualViewport/);
-  assert.match(read('package.json'),/0\.1\.0-alpha\.33/);
+  assert.match(JSON.parse(read('package.json')).version,/^0\.1\.0-alpha\.\d+$/);
 });

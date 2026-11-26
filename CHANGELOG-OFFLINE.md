@@ -2,6 +2,13 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.34 (26.11.2026) – Monatsvergleich, Kontenübersicht und verlässliche Verlaufskennzeichnung (developer)
+- Startseiten beider Datenquellen: frei wählbare Monate 1 und 2, Währung, Konto und Kategorie sowie eine gemeinsame grafische Gegenüberstellung von Einnahmen und Ausgaben.
+- Serverkonten nach aktiven Konten mit Saldo, inaktiven Konten und Nullkonten gegliedert. Ein Verweis öffnet den Kontostandsabgleich im Dashboard; kein ungesicherter Saldo-Schreibvorgang über die vorhandene Buchungs-API.
+- Server-Reiter „Monat“: Monate ohne vollständig geladene Historie werden nicht länger als verlässliche 0 € oder durch volle Balken dargestellt. Teilzahlen sind als vorläufig erkennbar; weitere Serverseiten lassen sich kontrolliert nachladen.
+- Währungsbezogene Filter verhindern die Addition verschiedener Währungen in Monatsauswertungen; bestehende Lese-/Schreibrechte und die Trennung lokaler und Serverdaten bleiben unverändert.
+- Kein Dashboard-Update, keine Migration von Finanzdaten, keine Änderung der Sicherungsformate. Eine echte vollständige Monatsauswertung benötigt langfristig einen dedizierten Mobile-API-Endpunkt.
+
 ## 0.1.0-alpha.33 (26.11.2026) – Tastaturfreundliche Empfänger- und Kategorieauswahl (developer)
 - Einheitliche, kompakte Suchvorschläge beim Anlegen und Bearbeiten von **lokalen Buchungen und Regeln** sowie **Serverbuchungen und Serverregeln**.
 - Vorschlagslisten werden wie in der mobilen Dashboard-Webansicht anhand des sichtbaren Bildschirmbereichs inklusive Android-Bildschirmtastatur oberhalb oder unterhalb des Eingabefelds positioniert. Maximal etwa vier Treffer gleichzeitig sichtbar, weitere per Scrollen.

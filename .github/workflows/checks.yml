@@ -29,4 +29,4 @@ jobs:
       - name: Testvorschau erzeugen
         run: npx tsc -p tsconfig.preview.json
       - name: Aktuelle gezielte Regressionstests
-        run: node --test tests/alpha26-full-backup.test.mjs tests/alpha27-display-lock.test.mjs tests/alpha28-home-search-safearea.test.mjs tests/alpha29-license-release.test.mjs tests/alpha30-licensing-safearea-release.test.mjs tests/alpha31-copyright.test.mjs tests/server-local-visual-parity.test.mjs tests/server-recurring-api.test.mjs tests/alpha33-suggestions.test.mjs
+        run: node --test tests/alpha26-full-backup.test.mjs tests/alpha27-display-lock.test.mjs tests/alpha28-home-search-safearea.test.mjs tests/alpha29-license-release.test.mjs tests/alpha30-licensing-safearea-release.test.mjs tests/alpha31-copyright.test.mjs tests/server-local-visual-parity.test.mjs tests/server-recurring-api.test.mjs tests/alpha33-suggestions.test.mjs tests/alpha34-home-report.test.mjs

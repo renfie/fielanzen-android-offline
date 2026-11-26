@@ -34,11 +34,12 @@ import type {ServerRecurringRule,ServerRecurringDraft,ServerRecurringMode,Server
 import {readBookingList,saveBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {appLock} from './app-lock.js';
 import {bookingCardHtml} from './booking-card-ui.js';
+import {calendarMonth,renderHomeComparison,type HomeComparisonFilter} from './home-comparison.js';
 import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.33';
+export const APP_VERSION='0.1.0-alpha.34';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -52,6 +53,8 @@ let inventoryCacheReport:ImportReport|null=null;
 const initialDate=new Date();
 let reportMonth = `${initialDate.getFullYear()}-${String(initialDate.getMonth()+1).padStart(2,'0')}`;
 let reportAccountFilter='all';
+let homeCompare:HomeComparisonFilter={first:reportMonth,second:calendarMonth(reportMonth,-1),currency:'EUR',account:'all',category:'all'};
+let homeFiltersOpen=false;
 let bookingDateFrom='';
 let bookingDateTo='';
 let bookingCategoryFilter='all';
@@ -397,22 +400,27 @@ function updateHomeResults():void{
 }
 function homeHtml(): string {
   const overall = [...calculateBalances(state,today()).values()].reduce((v,cents)=>v+cents,0);
-  const month = today().slice(0,7);
-  const monthly = state.bookings.filter(b=>b.date.startsWith(month));
-  const income = monthly.filter(b=>b.type==='income').reduce((v,b)=>v+b.amountCents,0);
-  const expense = monthly.filter(b=>b.type==='expense').reduce((v,b)=>v+b.amountCents,0);
+  const comparison=renderHomeComparison({
+    prefix:'local-home',filter:homeCompare,
+    accounts:state.accounts.map(a=>({id:a.id,name:a.name,currency:'EUR',decimals:2})),
+    categories:state.categories.map(c=>({id:c.id,name:c.name})),
+    bookings:state.bookings.map(b=>({date:b.date,kind:b.type,accountId:b.accountId,
+      categoryId:b.categoryId??0,amountMinor:b.amountCents})),
+    complete:true,defaultCurrency:'EUR',filtersOpen:homeFiltersOpen
+  });
   return `<section class="intro"><div><div class="eyebrow">Deine Finanzen im Blick</div><h1>Übersicht</h1><div class="muted small">Alle Daten lokal auf diesem Gerät</div></div><button class="btn primary" data-action="add-booking" ${!state.accounts.length?'disabled':''}>+ Buchung</button></section>
     <section class="card"><div class="section-title"><h2>Gesamtvermögen</h2><span class="muted">Alle Konten</span></div><div class="balance-total ${overall<0?'expense':''}">${formatEuro(overall)}</div></section>
     <details class="card account-disclosure" id="home-account-balances" ${homeBalancesOpen?'open':''}>
       <summary class="disclosure-toggle"><span><strong>Kontostände</strong><small>${state.accounts.length} Konten · Gesamt ${formatEuro(overall)}</small></span><span class="disclosure-chevron" aria-hidden="true">⌄</span></summary>
       <div class="disclosure-body"><div class="btn-row disclosure-tools"><button class="btn text" data-action="add-account">+ Konto</button><button class="btn secondary" data-action="reconcile-account">Kontostand abgleichen</button></div>${accountCards()}</div>
     </details>
-    <section class="card"><div class="section-title"><h2>Dieser Monat</h2><span class="muted">${esc(new Date().toLocaleDateString('de-DE',{month:'long',year:'numeric'}))}</span></div><div class="stats"><div><strong class="income">+${formatEuro(income)}</strong><span>Einnahmen</span></div><div><strong class="expense">−${formatEuro(expense)}</strong><span>Ausgaben</span></div></div></section>
+    ${comparison}
     <section class="card"><div class="section-title"><h2>Buchungen</h2><span class="muted small" id="home-booking-count">${homeBookings().length} Treffer</span></div>
       <div class="booking-quick-bar"><label class="field" for="home-booking-search">Buchungen durchsuchen
         <input id="home-booking-search" type="search" autocomplete="off" placeholder="Empfänger, Kategorie, Konto, Notiz, Betrag …" value="${esc(homeBookingQuery)}"></label></div>
       <div id="home-booking-results">${bookingsHtml(true)}</div></section>`;
 }
+
 function bookingsViewHtml(): string {
   const matches=filteredBookings();
   const totals=bookingTotals(matches);
@@ -511,7 +519,7 @@ function reportsHtml():string {
     <section class="card"><div class="section-title"><h2>Verlauf</h2><span class="muted">12 Monate bis ${esc(monthName(reportMonth))}</span></div>
       <div class="trend-legend"><span class="trend-income-mark">Einnahmen</span><span class="trend-expense-mark">Ausgaben</span></div>
       <div class="trend-list">${trend.map(t=>`<div class="trend-row"><span>${esc(monthName(t.month))}</span><div class="trend-bars">
-         <i class="trend-income" style="width:${Math.round(t.incomeCents/max*100)}%"></i><i class="trend-expense" style="width:${Math.round(t.expenseCents/max*100)}%"></i></div>
+         ${t.incomeCents>0?`<i class="trend-income" style="width:${Math.round(t.incomeCents/max*100)}%"></i>`:''}${t.expenseCents>0?`<i class="trend-expense" style="width:${Math.round(t.expenseCents/max*100)}%"></i>`:''}</div>
          <strong class="${t.incomeCents-t.expenseCents<0?'expense':'income'}">${formatEuro(t.incomeCents-t.expenseCents)}</strong></div>`).join('')}</div>
       <p class="muted small">Der Jahresverlauf enthält auch Monate ohne Buchungen. Die Beträge sind lokal berechnet.</p></section>`;
 }
@@ -1001,6 +1009,10 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     const [accounts,categories,payees,first]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings()]);
     const pending=parsePending((await secure.getPending()).json);
     remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,expandedBookingId:null};
+    if(!accounts.some(a=>a.currency===remote.reportCurrencyFilter))
+      remote.reportCurrencyFilter=accounts[0]?.currency??'EUR';
+    if(!accounts.some(a=>a.currency===remote.homeCompare.currency))
+      remote.homeCompare.currency=accounts[0]?.currency??'EUR';
     // This optional flag currently only specifies the future pagination policy.
     void preservePages;
   }catch(error){
@@ -1010,6 +1022,23 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     if(error instanceof DashboardApiError && (error.status===401||error.status===403))remote.session=null;
     remote.loading=false;
   }finally{serverLoadBusy=false;render();}
+}
+async function loadMoreRemoteHistory():Promise<void>{
+  if(!serverMode||serverLoadBusy||!remote.nextBefore)return;
+  serverLoadBusy=true;remote.loading=true;remote.error='';render();
+  try{
+    const client=await connectedServerClient();
+    // Only three additional API pages per explicit tap, never a silent full-ledger download.
+    for(let i=0;i<3&&remote.nextBefore;i++){
+      const before=remote.nextBefore;
+      const page=await client.bookings(before);
+      if(page.nextBefore===before)throw new Error('Wiederholter API-Seitenzeiger.');
+      const seen=new Set(remote.bookings.map(b=>b.id));
+      remote.bookings.push(...page.items.filter(b=>!seen.has(b.id)));
+      remote.nextBefore=page.nextBefore;
+    }
+  }catch(error){remote.error=error instanceof Error?error.message:'Historische Buchungen konnten nicht geladen werden.';}
+  finally{serverLoadBusy=false;remote.loading=false;render();}
 }
 async function loadMoreRemote(forHome=false):Promise<void>{
   if(!serverMode||serverLoadBusy)return;
@@ -1635,6 +1664,7 @@ async function click(action: string, id?: number): Promise<void> {
     const allowed=new Set(['go-home','go-bookings','go-settings','go-recurring','go-reports',
       'server-reload','server-more-bookings','server-add-booking','server-edit-booking','server-delete-booking',
       'toggle-server-booking','server-reset-filters','server-previous-report-month','server-next-report-month','print-report',
+      'server-home-reset','server-more-history',
       'server-recurring-reload','server-recurring-add','server-recurring-edit','server-recurring-save-mode',
       'server-recurring-post','server-recurring-delete',
       'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending']);
@@ -1704,6 +1734,13 @@ async function click(action: string, id?: number): Promise<void> {
       }
       case 'server-reload':if(view==='recurring')await loadRemoteRecurring();else await loadRemoteServer();return;
       case 'server-more-bookings':await loadMoreRemote(view==='home');return;
+      case 'server-more-history':await loadMoreRemoteHistory();return;
+      case 'server-home-reset':{
+        const current=today().slice(0,7);
+        remote.homeCompare={...remote.homeCompare,first:current,second:calendarMonth(current,-1),
+          account:'all',category:'all'};
+        render();return;
+      }
       case 'server-add-booking':serverCreateDialog();return;
       case 'server-edit-booking':{
         const row=remote.bookings.find(x=>x.id===id);if(row)serverCreateDialog(row);return;
@@ -1745,6 +1782,11 @@ async function click(action: string, id?: number): Promise<void> {
       render();break;
     }
     case 'go-home':view='home';render();break;
+    case 'local-home-reset':{
+      const current=today().slice(0,7);
+      homeCompare={first:current,second:calendarMonth(current,-1),currency:'EUR',account:'all',category:'all'};
+      render();break;
+    }
     case 'go-bookings':view='bookings';render();break;
     case 'go-settings':view='settings';render();break;
     case 'go-data-check':view='data-check';render();break;
@@ -1902,6 +1944,8 @@ async function click(action: string, id?: number): Promise<void> {
 document.addEventListener('toggle',e=>{
   const el=e.target as HTMLElement;
   if(el instanceof HTMLDetailsElement && el.id==='home-account-balances')homeBalancesOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='local-home-month-filters')homeFiltersOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-home-month-filters')remote.homeFiltersOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='server-home-account-balances')remote.balancesOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='server-booking-advanced-filters')remote.filtersOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='booking-advanced-filters')bookingFiltersOpen=el.open;
@@ -1913,6 +1957,22 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   if(!appUnlocked)return;
   const target=e.target as HTMLInputElement;
+  if(target.id.startsWith('local-home-')||target.id.startsWith('server-home-')){
+    const isServer=target.id.startsWith('server-home-');
+    if(isServer!==serverMode)return;
+    const next=isServer?remote.homeCompare:homeCompare;
+    const suffix=target.id.slice(isServer?'server-home-'.length:'local-home-'.length);
+    const validMonth=/^\d{4}-(0[1-9]|1[0-2])$/;
+    if(suffix==='month-a'||suffix==='month-b'){
+      if(!validMonth.test(target.value))return;
+      next[suffix==='month-a'?'first':'second']=target.value;
+    }else if(suffix==='currency'){
+      next.currency=target.value;next.account='all';
+    }else if(suffix==='account')next.account=target.value;
+    else if(suffix==='category')next.category=target.value;
+    else return;
+    render();return;
+  }
   if(['booking-list-size','booking-list-sort','local-list-sort','server-list-sort'].includes(target.id)){
     const current=readBookingList();
     const next={...current, ...(target.id==='booking-list-size'?{pageSize:Number(target.value)}:{sort:target.value})};
@@ -1950,6 +2010,9 @@ document.addEventListener('change',e=>{
   }
   if(serverMode && element.id==='server-report-account-filter'){
     remote.reportAccountFilter=element.value;render();return;
+  }
+  if(serverMode && element.id==='server-report-currency-filter'){
+    remote.reportCurrencyFilter=element.value;remote.reportAccountFilter='all';render();return;
   }
   if(element.id==='audit-choice'){auditChoice=element.value;auditQuery='';auditRowsVisible=80;render();return;}
   if(element.id==='report-month'){

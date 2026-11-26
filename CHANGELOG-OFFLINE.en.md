@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## 0.1.0-alpha.34 (2026-11-26) – Month comparison, account display and honest partial-trend handling (developer)
+- Both home screens share month A/B selection with currency, account and category filters plus comparable income/expense bars.
+- Server account list prioritizes active accounts with balances, identifies inactive accounts, and links to Dashboard reconciliation without creating unauthorized or inconsistent API writes.
+- Server 12-month trend avoids fabricated zero months and full bars for missing history; partially loaded figures are labelled as provisional and historical API pages can be loaded on explicit request.
+- Currency filtering prevents mixing monetary units in server reports. No change to finance databases, API mutations, backups or Dashboard deployment.
+- An authenticated server-side monthly summary API is still needed for instant full-history reports; physical-device validation is pending.
+
 ## 0.1.0-alpha.33 (2026-11-26) – Keyboard-aware payee and category selection (developer)
 - Shared compact, searchable suggestions for **local and server bookings and recurring-rule editors**.
 - As in the Dashboard mobile website, lists position themselves above or below each input using the visible viewport with the Android software keyboard. Roughly four rows remain visible at once; additional matches can scroll.
