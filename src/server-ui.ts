@@ -7,6 +7,7 @@
 import type {RemoteAccount,RemoteBooking,RemoteCategory,DashboardSession,PendingWrite,RemotePayee} from './dashboard-protocol.js';
 import {readBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {bookingCardHtml} from './booking-card-ui.js';
+import type {ServerRecurringRule} from './server-recurring.js';
 export type ServerPeriod='7'|'30'|'90'|'180'|'all';
 export interface ServerViewData {
   server:string;session:DashboardSession|null;accounts:RemoteAccount[];categories:RemoteCategory[];
@@ -16,6 +17,8 @@ export interface ServerViewData {
   period:ServerPeriod;periodExplicit:boolean;kindFilter:'all'|RemoteBooking['kind'];
   accountFilter:string;categoryFilter:string;dateFrom:string;dateTo:string;
   reportMonth:string;reportAccountFilter:string;
+  recurringSupported:boolean;recurringLoaded:boolean;recurringLoading:boolean;
+  recurringRules:ServerRecurringRule[];recurringError:string;
 }
 const currentMonth=():string=>{
   const now=new Date();
@@ -26,7 +29,8 @@ export const emptyServerData=():ServerViewData=>({
   error:'',loading:false,pending:null,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,
   searchHome:'',searchBookings:'',expandedBookingId:null,balancesOpen:false,filtersOpen:false,
   period:'30',periodExplicit:false,kindFilter:'all',accountFilter:'all',categoryFilter:'all',
-  dateFrom:'',dateTo:'',reportMonth:currentMonth(),reportAccountFilter:'all'
+  dateFrom:'',dateTo:'',reportMonth:currentMonth(),reportAccountFilter:'all',
+  recurringSupported:false,recurringLoaded:false,recurringLoading:false,recurringRules:[],recurringError:''
 });
 const esc=(v:unknown):string=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 export function formatMinor(amount:number,account:RemoteAccount|undefined):string{
@@ -194,12 +198,59 @@ function serverReportsHtml(data:ServerViewData):string{
         <strong class="${t.income-t.expense<0?'expense':'income'}">${esc(formatServerSum(t.income-t.expense,data))}</strong></div>`).join('')}</div>
       <p class="muted small">Trend aus geladenen Serverseiten; Monate ohne geladene Buchungen sind nicht zwangsläufig buchungsfrei.</p></section>`;
 }
-function serverRecurringHtml():string{
+const recurringFrequency=(f:ServerRecurringRule['frequency']):string=>
+  ({daily:'Täglich',weekly:'Wöchentlich',monthly:'Monatlich',quarterly:'Vierteljährlich',yearly:'Jährlich'}[f]);
+const recurringModeName=(m:ServerRecurringRule['mode']):string=>
+  ({paused:'Pausiert',manual:'Manuelle Buchung',auto:'Automatische Buchung'}[m]);
+function serverRecurringHtml(data:ServerViewData):string{
+  const ready=data.recurringSupported;
+  const canWrite=Boolean(data.session?.canWrite&&!data.pending&&ready&&data.recurringLoaded&&!data.recurringLoading);
+  const admin=data.session?.role==='admin';
+  const today=new Date();
+  const date=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const rows=[...data.recurringRules].sort((a,b)=>Number(a.mode==='paused')-Number(b.mode==='paused')||
+    (a.nextOn??'9999').localeCompare(b.nextOn??'9999')||a.title.localeCompare(b.title,'de'));
+  const disabled=canWrite?'':'disabled';
   return `<section class="intro"><div><div class="eyebrow">Geplante Buchungen</div><h1>Wiederkehrend</h1></div>
-    <button class="btn primary" disabled title="Mobile-API stellt die Regelverwaltung nicht bereit">+ Regel</button></section>
-    <section class="card"><div class="section-title"><h2>Regeln</h2><button class="btn secondary" disabled>Fällige ausführen</button></div>
-      <div class="notice">Die Dashboard-Mobile-API liefert momentan keine wiederkehrenden Regeln. Deshalb können hier noch keine Serverregeln angezeigt, angelegt oder ausgeführt werden.</div>
-      <p class="muted small">Deine lokal gespeicherten Regeln werden im Servermodus bewusst nicht eingeblendet oder gestartet. Zur Verwaltung bestehender Serverregeln das Dashboard verwenden.</p></section>`;
+    <button type="button" class="btn primary" data-action="server-recurring-add" ${disabled}>+ Regel</button></section>
+    <section class="card">
+      <div class="section-title"><h2>Regeln (${ready?rows.length:'–'})</h2>
+        <button type="button" class="btn secondary" data-action="server-recurring-reload" ${data.recurringLoading?'disabled':''}>Aktualisieren</button></div>
+      ${!ready?`<div class="notice">Die Mobile-API dieses Dashboards stellt wiederkehrende Regeln noch nicht bereit. Die Android-Oberfläche ist dafür vorbereitet; bis zur Freischaltung werden keine lokalen Regeln eingesetzt oder ausgeführt.</div>`:''}
+      ${data.recurringLoading?'<p class="muted small" role="status">Serverregeln werden geladen …</p>':''}
+      ${data.recurringError?`<div class="error" role="alert">${esc(data.recurringError)}</div>`:''}
+      ${ready&&!data.recurringLoading&&data.recurringLoaded&&!rows.length?'<div class="empty">Noch keine wiederkehrenden Serverregeln vorhanden.</div>':''}
+      ${ready?rows.map(rule=>{
+        const account=data.accounts.find(a=>a.id===rule.accountId);
+        const category=data.categories.find(c=>c.id===rule.categoryId);
+        const kindText=kindLabel(rule.kind);
+        const prefix=rule.kind==='income'?'+':rule.kind==='expense'?'−':'⇄ ';
+        const recurringType=rule.kind==='transfer'? (account?.name??'Quellkonto')+' → '+
+          (data.accounts.find(a=>a.id===rule.toAccountId)?.name??'Zielkonto'):
+          (rule.payeeTitle||category?.name||rule.title);
+        const canPost=canWrite&&rule.mode==='manual'&&Boolean(rule.nextOn)&&rule.nextOn! <= date;
+        const options=['paused','manual','auto'].map(value=>
+          `<option value="${value}" ${rule.mode===value?'selected':''} ${value==='auto'&&!admin?'disabled':''}>${recurringModeName(value as ServerRecurringRule['mode'])}</option>`).join('');
+        return `<div class="settings-line server-recurring-rule" data-rule-id="${rule.id}">
+          <div class="setting-details"><strong>${esc(rule.title)} ${rule.mode==='paused'?'(inaktiv)':''}</strong>
+            <span>${esc(recurringType)} · ${esc(kindText)} · ${esc(prefix+formatMinor(rule.amountMinor,account))}</span>
+            <span>${esc(recurringFrequency(rule.frequency))}${rule.intervalCount>1?' · alle '+rule.intervalCount:''} · ${esc(recurringModeName(rule.mode))}</span>
+            <span>${rule.nextOn?'Nächste Fälligkeit: '+esc(rule.nextOn.split('-').reverse().join('.')):'Keine nächste Fälligkeit'} · ${rule.completedCount} ausgeführt</span>
+            ${rule.endOn?`<span>Enddatum: ${esc(rule.endOn.split('-').reverse().join('.'))}</span>`:''}
+            ${rule.maxOccurrences!==null?`<span>Maximal ${rule.maxOccurrences} Ausführungen</span>`:''}
+            ${rule.needsReview?`<span class="warning">Prüfung nötig: ${esc(rule.needsReview)}</span>`:''}
+            ${canWrite?`<div class="server-recurring-tools">
+              <label class="field">Ausführungsmodus
+                <select id="server-recurring-mode-${rule.id}" aria-label="Ausführungsmodus für ${esc(rule.title)}">${options}</select></label>
+              <div class="btn-row"><button type="button" class="btn secondary" data-action="server-recurring-save-mode" data-id="${rule.id}">Übernehmen</button>
+                <button type="button" class="btn secondary" data-action="server-recurring-edit" data-id="${rule.id}">Bearbeiten</button>
+                <button type="button" class="btn danger" data-action="server-recurring-delete" data-id="${rule.id}">Löschen</button></div>
+              ${canPost?`<button type="button" class="btn primary" data-action="server-recurring-post" data-id="${rule.id}">Fällige Buchung bestätigen</button>`:''}
+            </div>`:''}
+          </div></div>`;
+      }).join(''):''}
+      <p class="muted small">Die Ausführung erfolgt ausschließlich im Dashboard. Automatik ist nur für Administratoren freigebbar. Eine Änderung an Regelinhalten setzt die Regel zur Prüfung auf „Pausiert“.</p>
+    </section>`;
 }
 function serverConnectionInfo(data:ServerViewData):string {
   return `<details class="card account-disclosure server-connection-info"><summary class="disclosure-toggle"><span><strong>Dashboard-Verbindung</strong>
@@ -219,7 +270,7 @@ export function serverPageHtml(data:ServerViewData,screen:'home'|'bookings'|'rec
       <button class="btn secondary" data-action="server-retry-pending">Denselben Auftrag erneut prüfen/senden</button>
       <button class="btn danger" data-action="server-discard-pending">Nach Kontrolle freigeben</button></div></section>`:'';
   const status=error+loading+pending;
-  if(screen==='recurring')return status+serverRecurringHtml()+serverConnectionInfo(data);
+  if(screen==='recurring')return status+serverRecurringHtml(data)+serverConnectionInfo(data);
   if(screen==='reports')return status+serverReportsHtml(data)+serverConnectionInfo(data);
   const prefs=readBookingList();
   const canWrite=Boolean(data.session?.canWrite&&!data.pending);

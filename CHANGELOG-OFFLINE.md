@@ -2,6 +2,12 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## Entwicklerzweig (nach Alpha 31) – API-Vorbereitung für Serverregeln
+- Wiederkehrende Serverregeln: gleiche Darstellung wie lokal, mit Formular für Anlegen/Bearbeiten, Modi Pausiert/Manuell/Automatisch, gesicherter manueller Fälligkeitsbuchung und Soft-Delete-Anforderung.
+- Bestehender Dashboard-Regelbestand wird erst bei explizitem Feature-Flag geladen; alte API bleibt kompatibel und frei von unbeabsichtigten Schreibversuchen.
+- Dashboard-Vertrag mit JSON-Feldern, Endpunkten, Rechteprüfungen, Idempotenz, If-Match, Administratorfreigabe und Abnahmetests dokumentiert.
+- Weiterhin ausschließlich `developer` – keine Dashboard-Änderung, keine signierte Veröffentlichung und keine Veränderung lokaler Finanzdaten.
+
 ## Entwicklerzweig (nach Alpha 31) – Einheitliche Oberfläche unabhängig von der Datenquelle
 - Gemeinsame Buchungskarten-Komponente für lokale und serverbasierte Buchungen: gleiches Layout, Farben, Kategorien, Statussymbole, Aufklappen und Schaltflächengrößen.
 - Dashboard-Startseite folgt der lokalen Übersicht mit Gesamtvermögen, einklappbaren Kontoständen, Monatsbereich und Buchungssuche; die serverseitige Buchungsübersicht erhält dieselbe Filter- und Sortierstruktur wie lokal.

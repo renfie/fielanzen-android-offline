@@ -91,3 +91,7 @@ Every push to `main` without a **new version** builds a **debug test APK**. When
 ## Unified UI for local and server data (developer)
 
 The overview and booking screens now use the **same booking-card renderer, spacing, colors, collapsed details and filter controls**. Server mode continues to read and write only via the Dashboard Mobile API; local SQLite financial data is never mixed into the server screens. Search and monthly summaries operate on **loaded server API pages only**, and reports explicitly warn about potentially incomplete history. Server-side recurring rules are not exposed by the current API, so they cannot be displayed or executed; local rules are not substituted. The separate developer branch builds test APKs without publishing signed releases.
+
+## Server recurring rules – API-ready Android preview (developer)
+
+The Android server mode is prepared for the planned Dashboard Mobile API to create/edit rules, select Paused/Manual/Automatic modes, explicitly confirm due manual postings and archive rules. **These API endpoints do not exist in the Dashboard yet.** Android enables this interface only after `/api/mobile/v1/capabilities` advertises `features.recurring_rules: true`; read/write permissions and admin-only automatic activation are enforced. Local rules remain separate, and the Dashboard alone schedules server postings. Uncertain writes remain secured in Android Keystore with their original idempotency key. [Backend implementation contract](docs/MOBILE-RECURRING-RULES-API.md).

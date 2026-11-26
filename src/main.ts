@@ -28,6 +28,8 @@ import {mtlsHttp} from './mtls-http.js';
 import {connectWithOptionalClientCertificate} from './dashboard-connection.js';
 import {serverPageHtml,serverSettingsHtml,emptyServerData,formatMinor,serverBookingResultsHtml,displayedServerBookings,serverBookingSummaryHtml} from './server-ui.js';
 import type {ServerViewData} from './server-ui.js';
+import {createRecurringPendingWrite,validateServerRecurringDraft} from './server-recurring.js';
+import type {ServerRecurringRule,ServerRecurringDraft,ServerRecurringMode,ServerRecurringFrequency} from './server-recurring.js';
 import {readBookingList,saveBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {appLock} from './app-lock.js';
 import {bookingCardHtml} from './booking-card-ui.js';
@@ -1027,6 +1029,29 @@ async function loadMoreRemote(forHome=false):Promise<void>{
   }catch(error){remote.error=error instanceof Error?error.message:'Weitere Buchungen konnten nicht geladen werden.';}
   finally{remote.loading=false;serverLoadBusy=false;render();}
 }
+/** Fetch remote rules only when the server advertises the complete recurring API.
+ * No local recurring rule is ever used as a fallback. */
+async function loadRemoteRecurring():Promise<void>{
+  if(!serverMode||remote.recurringLoading)return;
+  remote.recurringLoading=true;remote.recurringError='';render();
+  try{
+    remote.pending=parsePending((await secureSession().getPending()).json);
+    const client=await connectedServerClient();
+    const supported=await client.recurringSupported();
+    remote.recurringSupported=supported;
+    if(!supported){
+      remote.recurringLoaded=false;remote.recurringRules=[];
+      return;
+    }
+    const rules=await client.recurringRules();
+    remote.recurringRules=rules;
+    remote.recurringLoaded=true;remote.recurringError='';
+  }catch(error){
+    remote.recurringLoaded=false;
+    remote.recurringRules=[];
+    remote.recurringError=error instanceof Error?error.message:'Serverregeln konnten nicht geladen werden.';
+  }finally{remote.recurringLoading=false;render();}
+}
 /** Server account preference is device-only, per server URL, never sent to the API. */
 function remoteDefaultAccount():number|null{
   try {const raw=localStorage.getItem('fielanzen-server-default:'+remote.server);const id=Number(raw);return raw&&remote.accounts.some(a=>a.id===id&&a.active)?id:null;}
@@ -1129,6 +1154,119 @@ function serverCreateDialog(booking?:RemoteBooking):void{
   })();});
   dlg.showModal();
 }
+/** Server-only rule editor. Never call showDialog(): that helper reloads local SQLite on submit. */
+function serverRecurringDialog(rule?:ServerRecurringRule):void{
+  if(!serverMode||!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||
+     remote.pending||serverWriteBusy||remote.recurringLoading){
+    remote.recurringError='Regeländerungen sind im Servermodus momentan nicht möglich.';render();return;
+  }
+  const selected=remote.accounts.find(a=>a.id===rule?.accountId)??remote.accounts.find(a=>a.id===remoteDefaultAccount())??remote.accounts.find(a=>a.active);
+  if(!selected){remote.recurringError='Kein aktives Serverkonto vorhanden.';render();return;}
+  const choice=(value:string,current:string):string=>value===current?'selected':'';
+  const form=`<p class="muted small">Diese Regel wird ausschließlich auf dem Dashboard-Server gespeichert. Neue und bearbeitete Regeln werden zunächst pausiert und müssen anschließend bewusst aktiviert werden.</p>
+    <label class="field">Regelname<input id="srv-rec-title" maxlength="160" required value="${esc(rule?.title??'')}" placeholder="z. B. Miete"></label>
+    <div class="form-grid"><label class="field">Buchungsart<select id="srv-rec-kind">
+      <option value="expense" ${choice('expense',rule?.kind??'expense')}>Ausgabe</option>
+      <option value="income" ${choice('income',rule?.kind??'expense')}>Einnahme</option>
+      <option value="transfer" ${choice('transfer',rule?.kind??'expense')}>Umbuchung</option></select></label>
+      <label class="field">Betrag (${esc(selected.currency)})<input id="srv-rec-amount" inputmode="decimal" required
+        value="${rule?esc(String(rule.amountMinor/10**selected.decimals).replace('.',',')):''}" placeholder="0,00"></label></div>
+    <div class="form-grid"><label class="field">Quellkonto<select id="srv-rec-account">${remote.accounts.filter(a=>a.active).map(a=>option(a.id,a.name,rule?.accountId??selected.id)).join('')}</select></label>
+      <label class="field" id="srv-rec-target-group">Zielkonto<select id="srv-rec-target"><option value="0">– Kein Zielkonto –</option>
+        ${remote.accounts.filter(a=>a.active).map(a=>option(a.id,a.name,rule?.toAccountId)).join('')}</select></label></div>
+    <div class="field server-search-field" id="srv-rec-category-group"><label for="srv-category-search">Kategorie</label>
+      <div class="category-picker"><input id="srv-category-search" class="category-query" type="search" autocomplete="off" placeholder="Kategorie suchen" aria-expanded="false"
+        value="${esc(remote.categories.find(c=>c.id===rule?.categoryId)?.name??'')}">
+        <input type="hidden" id="srv-category" value="${rule?.categoryId??0}"><div id="srv-category-menu" class="category-menu" hidden></div></div></div>
+    <div class="field server-search-field" id="srv-rec-payee-group"><label for="srv-payee">Empfänger / Zahler</label>
+      <div class="payee-picker"><input id="srv-payee" maxlength="100" value="${esc(rule?.payeeTitle??'')}" placeholder="Empfänger suchen oder neu eintragen" autocomplete="off">
+        <div id="srv-payee-menu" class="payee-menu" hidden></div></div></div>
+    <div class="form-grid"><label class="field">Startdatum<input type="date" id="srv-rec-start" required value="${esc(rule?.startOn??today())}"></label>
+      <label class="field">Ausführen ab<input type="time" id="srv-rec-time" required value="${esc(rule?.runAt??'00:00')}"></label></div>
+    <div class="form-grid"><label class="field">Wiederholung<select id="srv-rec-frequency">
+      <option value="daily" ${choice('daily',rule?.frequency??'monthly')}>Täglich</option>
+      <option value="weekly" ${choice('weekly',rule?.frequency??'monthly')}>Wöchentlich</option>
+      <option value="monthly" ${choice('monthly',rule?.frequency??'monthly')}>Monatlich</option>
+      <option value="quarterly" ${choice('quarterly',rule?.frequency??'monthly')}>Vierteljährlich</option>
+      <option value="yearly" ${choice('yearly',rule?.frequency??'monthly')}>Jährlich</option></select></label>
+      <label class="field">Alle wie viele Intervalle?<input type="number" id="srv-rec-interval" required min="1" max="120" value="${rule?.intervalCount??1}"></label></div>
+    <div class="form-grid"><label class="field" id="srv-rec-monthday-group">Tag im Monat (1–31)
+      <input type="number" id="srv-rec-monthday" required min="1" max="31" value="${rule?.dayOfMonth??Number(today().slice(-2))}"></label>
+      <label class="field">Enddatum (optional)<input type="date" id="srv-rec-end" value="${esc(rule?.endOn??'')}"></label></div>
+    <label class="field">Maximal so oft ausführen (optional)<input id="srv-rec-max" type="number" min="1" max="10000" value="${rule?.maxOccurrences??''}" placeholder="Unbegrenzt"></label>
+    <label class="field">Notiz<textarea id="srv-rec-note" maxlength="1000">${esc(rule?.note??'')}</textarea></label>
+    ${rule?`<p class="notice">Beim Bearbeiten wird der Ausführungsmodus auf „Pausiert“ zurückgesetzt. Bereits gebuchte Umsätze und Ausführungen bleiben erhalten.</p>`:''}`;
+  const dlg=document.createElement('dialog');
+  dlg.innerHTML=`<div class="modal-head"><h2>${rule?'Serverregel bearbeiten':'Neue Serverregel'}</h2>
+    <button type="button" class="btn text close-modal" aria-label="Schließen">✕</button></div>
+    <form class="modal-body"><div id="dialog-error" role="alert"></div>${form}
+      <div class="modal-actions"><button type="button" class="btn secondary close-modal">Abbrechen</button>
+        <button type="submit" class="btn primary">${rule?'Regel speichern (pausiert)':'Regel anlegen (pausiert)'}</button></div>
+    </form>`;
+  document.body.appendChild(dlg);
+  dlg.querySelectorAll('.close-modal').forEach(b=>b.addEventListener('click',()=>dlg.close()));
+  dlg.addEventListener('close',()=>dlg.remove());
+  const kind=dlg.querySelector<HTMLSelectElement>('#srv-rec-kind')!;
+  const target=dlg.querySelector<HTMLSelectElement>('#srv-rec-target')!;
+  const category=dlg.querySelector<HTMLInputElement>('#srv-category')!;
+  const categoryQuery=dlg.querySelector<HTMLInputElement>('#srv-category-search')!;
+  const frequency=dlg.querySelector<HTMLSelectElement>('#srv-rec-frequency')!;
+  const monthday=dlg.querySelector<HTMLInputElement>('#srv-rec-monthday')!;
+  const start=dlg.querySelector<HTMLInputElement>('#srv-rec-start')!;
+  remotePicker(dlg,'srv-category-search','srv-category-menu',
+    ()=>remote.categories.filter(c=>c.kind===kind.value).map(c=>({id:c.id,name:c.name})),true);
+  remotePicker(dlg,'srv-payee','srv-payee-menu',()=>remote.payees.map(p=>({id:p.id,name:p.name})));
+  const sync=()=>{
+    dlg.querySelector<HTMLElement>('#srv-rec-target-group')!.classList.toggle('hide',kind.value!=='transfer');
+    target.disabled=kind.value!=='transfer';
+    dlg.querySelector<HTMLElement>('#srv-rec-category-group')!.classList.toggle('hide',kind.value==='transfer');
+    dlg.querySelector<HTMLElement>('#srv-rec-payee-group')!.classList.toggle('hide',kind.value==='transfer');
+    dlg.querySelector<HTMLElement>('#srv-rec-monthday-group')!.classList.toggle('hide',frequency.value==='daily'||frequency.value==='weekly');
+    if(kind.value!=='transfer'&&!remote.categories.some(c=>c.id===Number(category.value)&&c.kind===kind.value)){
+      category.value='0';categoryQuery.value='';
+    }
+  };
+  kind.addEventListener('change',sync);frequency.addEventListener('change',sync);sync();
+  let dayManual=Boolean(rule);
+  monthday.addEventListener('input',()=>{dayManual=true;});
+  start.addEventListener('change',()=>{if(!dayManual)monthday.value=String(Number(start.value.slice(-2))||1);});
+  dlg.querySelector('form')!.addEventListener('submit',e=>{e.preventDefault();void (async()=>{
+    const button=dlg.querySelector<HTMLButtonElement>('button[type="submit"]')!;button.disabled=true;
+    try{
+      const val=(id:string)=>dlg.querySelector<HTMLInputElement>('#'+id)!.value.trim();
+      const kindValue=kind.value as ServerRecurringDraft['kind'];
+      const accountId=Number(val('srv-rec-account'));
+      const account=remote.accounts.find(a=>a.id===accountId);
+      if(!account)throw new Error('Quellkonto unbekannt.');
+      const amountText=val('srv-rec-amount').replace(/\s/g,'').replace(',','.');
+      const decimals=account.decimals;
+      const valid=decimals===0?/^\d+$/:new RegExp('^\\d+(?:\\.\\d{1,'+decimals+'})?$');
+      if(!valid.test(amountText))throw new Error('Ungültiger Betrag. Maximal '+decimals+' Nachkommastellen.');
+      const [whole,fract='']=amountText.split('.');
+      const amount=Number(whole)*10**decimals+Number(fract.padEnd(decimals,'0'));
+      if(kindValue!=='transfer'&&categoryQuery.value.trim()&&!Number(category.value))
+        throw new Error('Kategorie bitte aus der Vorschlagsliste auswählen.');
+      const draft=validateServerRecurringDraft({
+        title:val('srv-rec-title'),kind:kindValue,account_id:accountId,
+        to_account_id:kindValue==='transfer'?Number(target.value):0,
+        category_id:kindValue==='transfer'?0:Number(category.value),
+        payee_title:kindValue==='transfer'?'':val('srv-payee'),amount_minor:amount,
+        note:val('srv-rec-note'),frequency:frequency.value as ServerRecurringFrequency,
+        interval_count:Number(val('srv-rec-interval')),day_of_month:Number(val('srv-rec-monthday')),
+        start_on:val('srv-rec-start'),run_at:val('srv-rec-time'),
+        end_on:val('srv-rec-end')||null,max_occurrences:val('srv-rec-max')?Number(val('srv-rec-max')):null
+      },remote.accounts,remote.categories);
+      await issueServerWrite(createRecurringPendingWrite(remote.server,rule?'update':'create',
+        rule?.id??null,draft,rule?.revision));
+      dlg.close();
+    }catch(error){
+      const errorNode=dlg.querySelector<HTMLElement>('#dialog-error')!;
+      errorNode.className='error';errorNode.textContent=error instanceof Error?error.message:String(error);
+    }finally{button.disabled=false;}
+  })();});
+  dlg.showModal();
+}
+
 async function issueServerWrite(request:PendingWrite,repeat=false):Promise<void>{
   if(!serverMode||serverWriteBusy)throw new Error('Server-Schreiboperation nicht möglich.');
   if(!remote.session?.canWrite)throw new Error('Dashboard verweigert Schreibzugriff; bestehende Benutzerrechte werden respektiert.');
@@ -1140,8 +1278,10 @@ async function issueServerWrite(request:PendingWrite,repeat=false):Promise<void>
     if(!repeat){await secure.putPending({json:JSON.stringify(request)});remote.pending=request;}
     await (await connectedServerClient()).write(request);
     await secure.clearPending();remote.pending=null;
-    message='Serverbuchung bestätigt. Konten und Buchungen werden neu geladen.';
+    const recurringWrite=request.path.startsWith('/api/mobile/v1/recurring');
+    message=recurringWrite?'Serverregel bestätigt. Die Serveransichten werden aktualisiert.':'Serverbuchung bestätigt. Konten und Buchungen werden neu geladen.';
     await loadRemoteServer();
+    if(recurringWrite)await loadRemoteRecurring();
   }catch(error){
     // An unknown network outcome is NOT retried with a new UUID automatically.
     remote.error=error instanceof Error?error.message:'Serveroperation nicht bestätigt.';
@@ -1480,6 +1620,8 @@ async function click(action: string, id?: number): Promise<void> {
     const allowed=new Set(['go-home','go-bookings','go-settings','go-recurring','go-reports',
       'server-reload','server-more-bookings','server-add-booking','server-edit-booking','server-delete-booking',
       'toggle-server-booking','server-reset-filters','server-previous-report-month','server-next-report-month','print-report',
+      'server-recurring-reload','server-recurring-add','server-recurring-edit','server-recurring-save-mode',
+      'server-recurring-post','server-recurring-delete',
       'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending']);
     if(!allowed.has(action)){remote.error='Lokale Funktionen sind im Servermodus gesperrt. Zuerst zu Lokal wechseln.';render();return;}
     switch(action){
@@ -1509,7 +1651,43 @@ async function click(action: string, id?: number): Promise<void> {
       case 'server-next-report-month':{
         remote.reportMonth=monthOffset(remote.reportMonth,1);render();return;
       }
-      case 'server-reload':await loadRemoteServer();return;
+      case 'go-recurring':view='recurring';await loadRemoteRecurring();return;
+      case 'server-recurring-reload':await loadRemoteRecurring();return;
+      case 'server-recurring-add':serverRecurringDialog();return;
+      case 'server-recurring-edit':{
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(rule)serverRecurringDialog(rule);return;
+      }
+      case 'server-recurring-save-mode':{
+        if(!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||remote.pending||serverWriteBusy)return;
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(!rule)return;
+        const next=document.querySelector<HTMLSelectElement>('#server-recurring-mode-'+rule.id)?.value as ServerRecurringMode|undefined;
+        if(!next||!['paused','manual','auto'].includes(next)||next===rule.mode)return;
+        if(next==='auto'){
+          if(remote.session.role!=='admin'){remote.recurringError='Nur Administratoren dürfen automatische Buchungen freigeben.';render();return;}
+          if(!window.confirm('Automatische Regel aktivieren? Das Dashboard wird künftige fällige Buchungen selbstständig in das Finanzbuch schreiben. Keine Banküberweisung.'))return;
+        }else if(!window.confirm('Ausführungsmodus für die Serverregel „'+rule.title+'“ ändern?'))return;
+        try{await issueServerWrite(createRecurringPendingWrite(remote.server,'mode',rule.id,{mode:next},rule.revision));}
+        catch{/* encrypted pending write is retained and visible */}return;
+      }
+      case 'server-recurring-post':{
+        if(!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||remote.pending||serverWriteBusy)return;
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(!rule||rule.mode!=='manual'||!rule.nextOn||rule.nextOn>today())return;
+        if(window.prompt('Fällige Serverbuchung „'+rule.title+'“ wirklich erzeugen? Zur Bestätigung BUCHEN eingeben.')!=='BUCHEN')return;
+        try{await issueServerWrite(createRecurringPendingWrite(remote.server,'post',rule.id,{confirm:'BUCHEN'},rule.revision));}
+        catch{/* never invent a new idempotency key on unknown outcome */}return;
+      }
+      case 'server-recurring-delete':{
+        if(!remote.recurringSupported||!remote.recurringLoaded||!remote.session?.canWrite||remote.pending||serverWriteBusy)return;
+        const rule=remote.recurringRules.find(r=>r.id===id);
+        if(!rule)return;
+        if(window.prompt('Serverregel archivieren? Bereits gebuchte Umsätze bleiben erhalten. Zur Bestätigung den vollständigen Regeltitel eingeben: '+rule.title)!==rule.title)return;
+        try{await issueServerWrite(createRecurringPendingWrite(remote.server,'delete',rule.id,{confirm_title:rule.title},rule.revision));}
+        catch{/* encrypted pending write is retained and visible */}return;
+      }
+      case 'server-reload':if(view==='recurring')await loadRemoteRecurring();else await loadRemoteServer();return;
       case 'server-more-bookings':await loadMoreRemote(view==='home');return;
       case 'server-add-booking':serverCreateDialog();return;
       case 'server-edit-booking':{

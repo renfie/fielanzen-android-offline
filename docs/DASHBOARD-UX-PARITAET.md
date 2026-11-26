@@ -36,3 +36,8 @@ Diese Datei hält die bereits gemeinsam festgelegten Regeln fest. Neue Meilenste
 - Änderungen auf developer erzeugen automatisch eine Debug-Test-APK; ein signierter Release erfolgt ausschließlich nach gesonderter Freigabe und Übernahme auf main.
 - Änderungen im Entwicklungszweig bündeln, Tests vorab ausführen und erst an Meilensteinen ein vollständiges Android-Projektpaket zur Installation freigeben.
 - Alte App-Daten beim APK-Update erhalten; vor riskanten Datenmigrationen externe Sicherung.
+
+## Wiederkehrend im Servermodus
+- Im Servermodus wird ausschließlich die neue Dashboard-Mobile-API für `recurring_rules` verwendet. Lokale FieLanzen-Regeln bleiben unsichtbar und werden niemals auf dem Server ausgeführt.
+- Modi: Pausiert / Manuell / Automatisch, Aktivierung der Server-Automatik nur durch Administratoren. Editieren pausiert automatisch, manuelle Buchung nur nach ausdrücklicher Bestätigung `BUCHEN` und serverseitiger Fälligkeitsprüfung.
+- Fehlender API-Support führt zur deaktivierten Anzeige, nicht zu einer fehlerhaften lokalen Ersatzfunktion. Die verbindliche Schnittstelle steht in [MOBILE-RECURRING-RULES-API.md](MOBILE-RECURRING-RULES-API.md).

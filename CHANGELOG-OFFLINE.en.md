@@ -2,6 +2,12 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## Developer branch (after Alpha 31) – Prepared recurring server-rule API
+- Local-style rule controls for server mode: create, edit, Paused/Manual/Automatic status, explicitly confirmed due manual posting, soft-delete request.
+- Backward-compatible capability gate keeps these controls inactive until the Dashboard advertises the complete recurring API.
+- JSON endpoint, permissions, If-Match, idempotency and admin-only automation contract with backend acceptance tests documented.
+- Only in `developer`: no Dashboard changes, signed release or local ledger migration.
+
 ## Developer branch (after Alpha 31) – Unified local and server UI
 - Local and server bookings share one card renderer, spacing, colors, tags, collapsed details, and action-button sizing.
 - Server overview and booking screens follow the local section order, account disclosure, month summary, search, and advanced filter controls.
