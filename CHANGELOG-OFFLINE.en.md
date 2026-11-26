@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## 0.1.0-alpha.37 (2026-11-26) – Native Dashboard account reconciliation (developer)
+- Use the existing local-style balance reconciliation form inside Android server mode; remove the link to the web Dashboard. Local SQLite finances and the offline reconciliation routine remain unchanged.
+- Require `account_reconciliation: true` together with an authorized write-enabled web-finance session; only eligible active accounts can be selected.
+- Signed current and actual balances support 0–3 decimal places. The client previews the delta; the server alone calculates and persists the adjustment.
+- Persist the exact request and UUID securely before POST; on unclear replies allow only an explicit identical UUID replay. HTTP 409 refreshes the authoritative balance and requires fresh confirmation.
+- Refresh server account, booking and active monthly reports after success. No changes to backup formats, financial schemas or server-write semantics; developer debug testing only.
+
 ## 0.1.0-alpha.36 (2026-11-26) – Fix history charts in Android WebView (developer)
 - Replace invisible CSS `conic-gradient` category charts with native SVG donut arcs; the app CSP blocks inline `style` attributes.
 - Monthly income/expense bars now use proportional SVG rectangles without forbidden inline width styles.

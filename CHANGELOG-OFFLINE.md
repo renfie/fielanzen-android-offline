@@ -2,6 +2,15 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.37 (26.11.2026) – Kontostandsabgleich direkt in Android (developer)
+- Die vorhandene Kontostandsabgleich-Maske steht nun ohne Web-Weiterleitung auch im Dashboard-Servermodus zur Verfügung. Lokale Finanzdaten und deren Abgleichroutine bleiben unverändert.
+- Voraussetzung: `features.account_reconciliation === true`, authentifizierte Schreibberechtigung und `finance_mode=web`. Nur aktive Konten mit gültigem Ist-Saldo auswählbar.
+- Eingabe und Vorschau für signierte Ist-Kontostände mit 0–3 Nachkommastellen. Der Server berechnet und bucht die Differenz über den eigenen geschützten Endpunkt.
+- Vor jedem POST wird der exakte Auftrag mit UUID verschlüsselt gespeichert; unklare Antworten erlauben ausschließlich einen ausdrücklich ausgelösten identischen Wiederholungsversuch.
+- Bei HTTP 409 wird der Serverkontostand neu gelesen und bei Änderungen eine erneute ausdrückliche Bestätigung verlangt. Positive, negative und Null-Differenzen sowie unveränderte Beträge werden entsprechend der Serverantwort gemeldet.
+- Nach Bestätigung werden Serverkonten, Buchungsseiten und vollständige Monatsauswertungen aktualisiert. Kein lokaler Datentransfer, keine Änderung von Backupformat oder Dashboard-API.
+- Nur `developer`; Debug-Test-APK; keine signierten Releases. Geräteprüfung ausstehend.
+
 ## 0.1.0-alpha.36 (26.11.2026) – Diagramme in der Android-Historie repariert (developer)
 - Das leere Diagrammfeld über der Kategorienliste wurde behoben: Kreissegmente werden in Android WebView als SVG statt als durch die App-Sicherheitsrichtlinie gesperrter Inline-CSS-Farbverlauf gezeichnet.
 - Auch die Einnahmen-/Ausgabenbalken der Monatsübersicht verwenden jetzt SVG und korrekte proportionale Balkenbreiten ohne Inline-Style-Attribute.

@@ -21,6 +21,9 @@ import {bookingTotals,calculateBalances,exportBookingsCsv,inspectSnapshot,invent
 import {categorySuggestions, filterManagedCategories} from './category-ui.js';
 import {attachDialogSuggestions,rankSuggestions,suggestionKey} from './suggestion-ui.js';
 import {planAccountReconciliation} from './reconcile.js';
+import {reconciliationPreview,parseReconciliationAmount,formatReconciliationInput,makeReconciliationPending,
+  isReconciliationPending,parseReconciliationResult,canReconcile} from './server-reconciliation.js';
+import type {ReconciliationResult} from './server-reconciliation.js';
 import {normalizeDashboardUrl,probeDashboard,DashboardClient,createPendingWrite} from './dashboard-api.js';
 import type {RemoteAccount,RemoteCategory,RemotePayee,RemoteBooking,RemoteDraft,PendingWrite} from './dashboard-api.js';
 import {validateRemoteDraft,parsePending,DashboardApiError} from './dashboard-protocol.js';
@@ -41,7 +44,7 @@ import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.36';
+export const APP_VERSION='0.1.0-alpha.37';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -1049,10 +1052,10 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     if(!(await client.capabilities()))throw new Error('Dashboard-Mobile-API v1 ist nicht bestätigt.');
     const session=await client.session();
     remote.session=session; // Authenticated; a faulty booking row must not masquerade as bad credentials.
-    const [accounts,categories,payees,first,monthlySupported]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings(),client.monthlyReportsSupported().catch(()=>false)]);
+    const [accounts,categories,payees,first,monthlySupported,reconciliationSupported]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings(),client.monthlyReportsSupported().catch(()=>false),client.reconciliationSupported().catch(()=>false)]);
     const pending=parsePending((await secure.getPending()).json);
     remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,expandedBookingId:null,
-      monthlySupported,homeMonthly:null,historyMonthly:null,homeMonthlyError:'',historyMonthlyError:''};
+      monthlySupported,reconciliationSupported,homeMonthly:null,historyMonthly:null,homeMonthlyError:'',historyMonthlyError:''};
     if(!accounts.some(a=>a.currency===remote.reportCurrencyFilter))
       remote.reportCurrencyFilter=accounts[0]?.currency??'EUR';
     if(!accounts.some(a=>a.currency===remote.homeCompare.currency))
@@ -1357,6 +1360,73 @@ function serverRecurringDialog(rule?:ServerRecurringRule):void{
   dlg.showModal();
 }
 
+/** A separate financial operation. An uncertain reply retains the exact encrypted
+ * account / JSON / UUID and can ONLY be retried explicitly with that same payload.
+ * Never pass a reconciliation through the regular booking creation endpoint. */
+async function issueServerReconciliation(request:PendingWrite,repeat=false):Promise<ReconciliationResult>{
+  if(!serverMode||serverWriteBusy||serverLoadBusy)throw new Error('Server-Abgleich gerade nicht möglich.');
+  if(!canReconcile(remote.session,remote.reconciliationSupported))
+    throw new Error('Schreibrecht, Web-Verwaltung oder Kontostandsabgleich-Capability fehlt.');
+  if(!isReconciliationPending(request))throw new Error('Kein gültiger Kontostandsabgleich.');
+  if(repeat){
+    if(!remote.pending||JSON.stringify(remote.pending)!==JSON.stringify(request))
+      throw new Error('Nur der exakt gespeicherte Abgleich darf erneut gesendet werden.');
+  }else if(remote.pending)throw new Error('Ein früherer Schreibauftrag ist noch ungeklärt.');
+  const id=Number(request.path.match(/\/accounts\/(\d+)\/reconcile$/)?.[1]);
+  if(!Number.isSafeInteger(id)||id<=0)throw new Error('Ungültige Konto-ID im Abgleich.');
+  const payload=request.data as {actual_balance_minor:number;expected_balance_minor:number;note:string};
+  serverWriteBusy=true;
+  const secure=secureSession();
+  let result:ReconciliationResult;
+  try{
+    if(!repeat){
+      await secure.putPending({json:JSON.stringify(request)});
+      remote.pending=request;
+    }
+    const client=await connectedServerClient();
+    result=parseReconciliationResult(await client.write(request),id);
+    if(result.actualBalanceMinor!==payload.actual_balance_minor ||
+       result.previousBalanceMinor!==payload.expected_balance_minor)
+      throw new Error('Der Server hat andere Kontostände als im bestätigten Abgleich zurückgegeben. Auftrag prüfen.');
+    await secure.clearPending();
+    remote.pending=null;
+  }catch(error){
+    if(error instanceof DashboardApiError&&[400,401,403,404,409].includes(error.status)){
+      // The server explicitly rejected this UUID. A future corrected request is
+      // permitted only after the user has reviewed fresh authoritative balances.
+      await secure.clearPending();
+      remote.pending=null;
+    }
+    remote.error=error instanceof Error?error.message:'Abgleich nicht bestätigt.';
+    if(remote.pending)remote.error+=' Antwort unklar: denselben offenen Auftrag mit derselben UUID wiederholen; keinen neuen Abgleich erstellen.';
+    render();
+    throw error;
+  }finally{serverWriteBusy=false;}
+  message=result.unchanged?'Kontostand bereits korrekt – keine Korrekturbuchung angelegt.':
+    'Server-Kontostand abgeglichen: '+formatMinor(result.changeMinor,remote.accounts.find(a=>a.id===id))+
+    ' Differenz als Korrekturbuchung gespeichert.';
+  remote.error='';
+  try{
+    const client=await connectedServerClient();
+    // Only server data are refreshed. Never read or write local finance storage here.
+    const [accounts,page]=await Promise.all([client.accounts(),client.bookings()]);
+    remote.accounts=accounts;
+    remote.bookings=page.items;
+    remote.nextBefore=page.nextBefore;
+    remote.homeMonthly=null;remote.historyMonthly=null;
+    // Refresh aggregated totals from the server; never derive full months from pages.
+    if(remote.monthlySupported===true){
+      await loadMonthlyFor('home');
+      if(view==='reports')await loadMonthlyFor('history');
+    }
+  }catch(error){
+    message+=' Die Speicherung wurde bestätigt; die Serveransicht bitte manuell aktualisieren: '+
+      (error instanceof Error?error.message:String(error));
+  }
+  render();
+  return result;
+}
+
 async function issueServerWrite(request:PendingWrite,repeat=false):Promise<void>{
   if(!serverMode||serverWriteBusy)throw new Error('Server-Schreiboperation nicht möglich.');
   if(!remote.session?.canWrite)throw new Error('Dashboard verweigert Schreibzugriff; bestehende Benutzerrechte werden respektiert.');
@@ -1561,6 +1631,140 @@ function addCategory(): void {
       await storage.addCategory(txt('cat-name'),txt('cat-kind') as CategoryKind);
   });
 }
+/** Same controls and visual structure as the existing LOCAL dialog.
+ * The local reconcileAccountDialog implementation below is not modified. */
+function serverReconcileDialog(accountId?:number):void{
+  if(!serverMode||!canReconcile(remote.session,remote.reconciliationSupported)||
+     remote.pending||serverWriteBusy||serverLoadBusy){
+    remote.error='Direkter Abgleich nicht verfügbar: Schreibrecht, Server-Capability oder freier Schreibstatus fehlt.';
+    render();return;
+  }
+  const eligible=remote.accounts.filter(a=>a.active&&a.decimals>=0&&a.decimals<=3&&Number.isSafeInteger(a.balanceMinor));
+  if(!eligible.length){remote.error='Keine aktiven Serverkonten mit gültigem Ist-Kontostand verfügbar.';render();return;}
+  const first=eligible.find(a=>a.id===accountId)??eligible.find(a=>a.id===remoteDefaultAccount())??eligible[0]!;
+  // Immutable server-read snapshots, never local SQLite or projected balances.
+  const observed=new Map(eligible.map(a=>[a.id,a]));
+  let needsReconfirmation=false;
+  let submitting=false;
+  const dlg=document.createElement('dialog');
+  dlg.innerHTML=`<div class="modal-head"><h2>Kontostand abgleichen</h2>
+      <button type="button" class="btn text close-modal" aria-label="Schließen">✕</button></div>
+    <form class="modal-body" novalidate><div id="dialog-error" role="alert"></div>
+      <p class="muted small">Die Differenz wird nur als Vorschau angezeigt. Der Dashboard-Server prüft den Ist-Saldo und speichert gegebenenfalls eine eigene nachvollziehbare Korrekturbuchung. Die lokalen Finanzdaten bleiben unverändert.</p>
+      <label class="field">Konto<select id="reconcile-account">${eligible.map(a=>option(a.id,a.name,first.id)).join('')}</select></label>
+      <p class="muted small" id="reconcile-current">Aktuell: ${esc(formatMinor(first.balanceMinor,first))}</p>
+      <p class="muted small" id="reconcile-projected">Prognose inkl. künftiger Buchungen: ${esc(formatMinor(first.projectedBalanceMinor,first))}</p>
+      <label class="field">Tatsächlicher Kontostand (${esc(first.currency)})<input id="reconcile-target" data-select-on-focus required inputmode="decimal" value="${esc(formatReconciliationInput(first.balanceMinor,first.decimals))}"></label>
+      <label class="field">Notiz (optional)<input id="reconcile-note" maxlength="500" value="Kontostand abgeglichen" placeholder="z. B. Bankabgleich"></label>
+      <p class="muted small" id="reconcile-delta">Differenz: ${esc(formatMinor(0,first))} (Vorschau)</p>
+      <div class="modal-actions"><button type="button" class="btn close-modal">Abbrechen</button>
+        <button type="submit" class="btn primary">Abgleich speichern</button></div></form>`;
+  document.body.appendChild(dlg);
+  const accountSelect=dlg.querySelector<HTMLSelectElement>('#reconcile-account')!;
+  const input=dlg.querySelector<HTMLInputElement>('#reconcile-target')!;
+  const note=dlg.querySelector<HTMLInputElement>('#reconcile-note')!;
+  const errorBox=dlg.querySelector<HTMLElement>('#dialog-error')!;
+  const submit=dlg.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+  const currentAccount=()=>observed.get(Number(accountSelect.value));
+  const setError=(text:string)=>{errorBox.className=text?'error':'';errorBox.textContent=text;};
+  const update=()=>{
+    const account=currentAccount();
+    if(!account)return;
+    const current=dlg.querySelector<HTMLElement>('#reconcile-current');
+    const projected=dlg.querySelector<HTMLElement>('#reconcile-projected');
+    const difference=dlg.querySelector<HTMLElement>('#reconcile-delta');
+    if(current)current.textContent='Aktuell: '+formatMinor(account.balanceMinor,account);
+    if(projected)projected.textContent='Prognose inkl. künftiger Buchungen: '+
+      formatMinor(account.projectedBalanceMinor,account);
+    const label=input.closest('label');
+    if(label)label.firstChild!.textContent='Tatsächlicher Kontostand ('+account.currency+')';
+    try{
+      const amount=parseReconciliationAmount(input.value,account.decimals);
+      if(difference)difference.textContent='Differenz: '+
+        formatMinor(reconciliationPreview(amount,account.balanceMinor),account)+' (Vorschau)';
+    }catch(error){if(difference)difference.textContent=error instanceof Error?error.message:'Bitte gültigen Betrag eingeben.';}
+  };
+  dlg.querySelectorAll('.close-modal').forEach(button=>button.addEventListener('click',()=>{if(!submitting)dlg.close();}));
+  dlg.addEventListener('close',()=>dlg.remove());
+  accountSelect.addEventListener('change',()=>{
+    needsReconfirmation=false;setError('');
+    const acc=currentAccount();
+    if(acc)input.value=formatReconciliationInput(acc.balanceMinor,acc.decimals);
+    update();
+  });
+  input.addEventListener('input',update);
+  input.addEventListener('focus',()=>input.select());
+  dlg.querySelector<HTMLFormElement>('form')!.addEventListener('submit',async event=>{
+    event.preventDefault();
+    if(submitting)return;
+    const account=currentAccount();
+    if(!account||!canReconcile(remote.session,remote.reconciliationSupported)||
+       remote.pending||serverWriteBusy){
+      setError('Der Serverabgleich ist gesperrt oder ein älterer Schreibauftrag ist noch ungeklärt.');
+      return;
+    }
+    let actual:number;
+    try{actual=parseReconciliationAmount(input.value,account.decimals);}
+    catch(error){setError(error instanceof Error?error.message:'Ungültiger Kontostand.');return;}
+    const delta=reconciliationPreview(actual,account.balanceMinor);
+    const summary='Konto: '+account.name+'\nIst: '+formatMinor(account.balanceMinor,account)+
+      '\nTatsächlich: '+formatMinor(actual,account)+'\nDifferenz: '+formatMinor(delta,account)+
+      '\n\n'+(needsReconfirmation?'Der Serverstand hat sich geändert. Nach erneuter Prüfung wirklich abgleichen?':
+        'Diesen Kontostand jetzt auf dem Dashboard-Server abgleichen?');
+    if(!window.confirm(summary))return;
+    submitting=true;submit.disabled=true;
+    let allowResubmit=true;
+    setError('');
+    try{
+      const pending=makeReconciliationPending(remote.server,account,actual,note.value);
+      await issueServerReconciliation(pending);
+      dlg.close();
+    }catch(error){
+      if(error instanceof DashboardApiError&&error.status===409){
+        // The rejected UUID is cleared by issueServerReconciliation. Re-read
+        // server balances before offering any newly confirmed request.
+        try{
+          const client=await connectedServerClient();
+          const [accounts,session,supported]=await Promise.all([
+            client.accounts(),client.session(),client.reconciliationSupported()]);
+          remote.session=session;remote.reconciliationSupported=supported;
+          remote.accounts=accounts;
+          const fresh=accounts.find(a=>a.id===account.id);
+          if(fresh&&fresh.active&&canReconcile(session,supported)){
+            observed.set(account.id,fresh);
+            needsReconfirmation=fresh.balanceMinor!==account.balanceMinor;
+            update();render();
+            setError(needsReconfirmation?
+              'Der Ist-Kontostand hat sich auf '+formatMinor(fresh.balanceMinor,fresh)+
+              ' geändert. Die Differenz wurde neu berechnet. Bitte prüfen und den Abgleich ausdrücklich erneut bestätigen.':
+              'Server meldet einen Konflikt ohne Saldoänderung. Bitte Servermodus und Konto prüfen; kein neuer Auftrag wurde gesendet.');
+            if(!needsReconfirmation)allowResubmit=false;
+          }else{
+            setError('Der Server erlaubt für dieses Konto derzeit keinen Abgleich. Bitte die Verbindung prüfen.');
+            allowResubmit=false;
+          }
+        }catch{
+          setError('Konflikt: Serverdaten konnten nicht neu geladen werden. Keine automatische Wiederholung.');
+          allowResubmit=false;
+        }
+      }else if(remote.pending){
+        setError('Serverantwort unklar. Der unveränderte Auftrag und seine UUID wurden sicher gespeichert. Dieses Fenster schließen und über „Offener Kontostandsabgleich“ denselben Auftrag erneut senden. Niemals einen neuen Auftrag starten.');
+        allowResubmit=false;
+      }else{
+        setError(error instanceof Error?error.message:String(error));
+        if(!canReconcile(remote.session,remote.reconciliationSupported))allowResubmit=false;
+      }
+    }finally{
+      submitting=false;
+      submit.disabled=Boolean(remote.pending)||!canReconcile(remote.session,remote.reconciliationSupported)||
+        !allowResubmit;
+      // An uncertain outcome or unresolved conflict cannot create a fresh UUID.
+    }
+  });
+  dlg.showModal();
+  update();
+}
+
 function reconcileAccountDialog(accountId?:number):void{
   if(!state.accounts.length)return;
   const initial=state.accounts.find(a=>a.id===accountId)?.id??defaultAccountId();
@@ -1718,7 +1922,8 @@ async function click(action: string, id?: number): Promise<void> {
       'server-history-reset','server-history-last-2','server-history-last-12','server-history-reload',
       'server-recurring-reload','server-recurring-add','server-recurring-edit','server-recurring-save-mode',
       'server-recurring-post','server-recurring-delete',
-      'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending']);
+      'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending',
+      'server-reconcile-account']);
     if(!allowed.has(action)){remote.error='Lokale Funktionen sind im Servermodus gesperrt. Zuerst zu Lokal wechseln.';render();return;}
     switch(action){
       case 'server-save-default':{
@@ -1801,6 +2006,7 @@ async function click(action: string, id?: number): Promise<void> {
         render();void loadMonthlyFor('history');return;
       }
       case 'server-history-reload':void loadMonthlyFor('history');return;
+      case 'server-reconcile-account':serverReconcileDialog();return;
       case 'server-add-booking':serverCreateDialog();return;
       case 'server-edit-booking':{
         const row=remote.bookings.find(x=>x.id===id);if(row)serverCreateDialog(row);return;
@@ -1813,7 +2019,9 @@ async function click(action: string, id?: number): Promise<void> {
         catch{/* pending and error displayed */}return;
       }
       case 'server-retry-pending':{
-        try{if(!remote.pending)throw new Error('Kein offener Schreibauftrag.');await issueServerWrite(remote.pending,true);}
+        try{if(!remote.pending)throw new Error('Kein offener Schreibauftrag.');
+          if(isReconciliationPending(remote.pending))await issueServerReconciliation(remote.pending,true);
+          else await issueServerWrite(remote.pending,true);}
         catch{/* message visible */}return;
       }
       case 'server-discard-pending':{

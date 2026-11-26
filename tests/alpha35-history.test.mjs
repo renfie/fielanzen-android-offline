@@ -113,5 +113,5 @@ test('server history and local history are wired with one renderer, and develope
  assert.match(server,/monthlySupported/);
  assert.match(source('src/dashboard-api.ts'),/monthlyReportsSupported/);
  assert.match(source('src/dashboard-api.ts'),/buildMonthlyPath/);
- assert.equal(JSON.parse(source('package.json')).version,'0.1.0-alpha.36');
+ assert.match(JSON.parse(source('package.json')).version,/^0\.1\.0-alpha\.\d+$/);
 });

@@ -57,15 +57,15 @@ test('complete local comparison renders zero correctly and permits month changes
  assert.match(html,/local-home-month-a/);
  assert.match(html,/local-home-reset/);
 });
-test('server overview has comparison filters and read-only reconciliation link, never uses local ledger',()=>{
+test('server overview has comparison filters and authorized reconciliation control, never uses local ledger',()=>{
  const data={...emptyServerData(),server:'https://example.org',accounts,bookings,
    categories:[{id:20,name:'Einkaufen',kind:'expense'}],
    session:{financeMode:'web',access:'write',canWrite:true,role:'admin'},
-   nextBefore:'200',balancesOpen:true};
+   nextBefore:'200',balancesOpen:true,reconciliationSupported:true};
  const home=serverPageHtml(data,'home');
  assert.match(home,/Filter und Zeitraum/);
  assert.match(home,/Monatsvergleich/);
- assert.match(home,/Kontostand im Dashboard abgleichen/);
+ assert.match(home,/data-action="server-reconcile-account"/);
  assert.match(home,/Inaktiv/);
  assert.match(home,/Serverwerte fehlen/);
  assert.doesNotMatch(home,/Alle Daten lokal auf diesem Gerät/);

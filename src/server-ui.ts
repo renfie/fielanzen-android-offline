@@ -10,12 +10,13 @@ import {bookingCardHtml} from './booking-card-ui.js';
 import {renderHomeComparison,calendarMonth,type HomeComparisonFilter} from './home-comparison.js';
 import type {MonthlyReport} from './monthly-api.js';
 import {renderHistory,type HistoryFilter} from './history-view.js';
+import {canReconcile,isReconciliationPending} from './server-reconciliation.js';
 import type {ServerRecurringRule} from './server-recurring.js';
 export type ServerPeriod='7'|'30'|'90'|'180'|'all';
 export interface ServerViewData {
   server:string;session:DashboardSession|null;accounts:RemoteAccount[];categories:RemoteCategory[];
   payees:RemotePayee[];bookings:RemoteBooking[];nextBefore:string|null;error:string;loading:boolean;
-  pending:PendingWrite|null;visibleCount:number;homeVisibleCount:number;searchHome:string;searchBookings:string;
+  pending:PendingWrite|null;reconciliationSupported:boolean;visibleCount:number;homeVisibleCount:number;searchHome:string;searchBookings:string;
   expandedBookingId:number|null;balancesOpen:boolean;filtersOpen:boolean;
   period:ServerPeriod;periodExplicit:boolean;kindFilter:'all'|RemoteBooking['kind'];
   accountFilter:string;categoryFilter:string;dateFrom:string;dateTo:string;
@@ -33,7 +34,7 @@ const currentMonth=():string=>{
 };
 export const emptyServerData=():ServerViewData=>({
   server:'',session:null,accounts:[],categories:[],payees:[],bookings:[],nextBefore:null,
-  error:'',loading:false,pending:null,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,
+  error:'',loading:false,pending:null,reconciliationSupported:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,
   searchHome:'',searchBookings:'',expandedBookingId:null,balancesOpen:false,filtersOpen:false,
   period:'30',periodExplicit:false,kindFilter:'all',accountFilter:'all',categoryFilter:'all',
   dateFrom:'',dateTo:'',reportMonth:currentMonth(),reportAccountFilter:'all',reportCurrencyFilter:'EUR',
@@ -296,11 +297,14 @@ function serverConnectionInfo(data:ServerViewData):string {
 export function serverPageHtml(data:ServerViewData,screen:'home'|'bookings'|'recurring'|'reports'|'settings'):string{
   const error=data.error?`<div class="error" role="alert">${esc(data.error)}</div>`:'';
   const loading=data.loading?'<p class="muted small" role="status">Serverdaten werden geladen …</p>':'';
-  const pending=data.pending?`<section class="card"><h2>Offener Server-Schreibauftrag</h2>
-    <p class="warning">Ein früherer Schreibversuch wurde nicht eindeutig bestätigt. Neue Schreibvorgänge sind gesperrt. Bitte zuerst den Server prüfen.</p>
+  const isPendingReconciliation=data.pending?isReconciliationPending(data.pending):false;
+  const pending=data.pending?`<section class="card"><h2>${isPendingReconciliation?'Offener Kontostandsabgleich':'Offener Server-Schreibauftrag'}</h2>
+    <p class="warning">${isPendingReconciliation?
+      'Der letzte Kontostandsabgleich wurde nicht eindeutig bestätigt. Neue Schreibvorgänge sind gesperrt. Bitte denselben Auftrag mit derselben UUID erneut prüfen oder senden.':
+      'Ein früherer Schreibversuch wurde nicht eindeutig bestätigt. Neue Schreibvorgänge sind gesperrt. Bitte zuerst den Server prüfen.'}</p>
     <p class="muted small">${esc(data.pending.method)} · ${esc(data.pending.createdAt)} · Idempotency-Key: ${esc(data.pending.idempotencyKey)}</p>
     <div class="btn-row"><button class="btn secondary" data-action="server-reload">Serverdaten laden</button>
-      <button class="btn secondary" data-action="server-retry-pending">Denselben Auftrag erneut prüfen/senden</button>
+      <button class="btn secondary" data-action="server-retry-pending">${isPendingReconciliation?'Denselben Abgleich erneut senden':'Denselben Auftrag erneut prüfen/senden'}</button>
       <button class="btn danger" data-action="server-discard-pending">Nach Kontrolle freigeben</button></div></section>`:'';
   const status=error+loading+pending;
   if(screen==='recurring')return status+serverRecurringHtml(data)+serverConnectionInfo(data);
@@ -344,8 +348,9 @@ export function serverPageHtml(data:ServerViewData,screen:'home'|'bookings'|'rec
         <span class="disclosure-chevron" aria-hidden="true">⌄</span></summary>
         <div class="disclosure-body"><div class="accounts">${accounts||'<div class="empty">Keine Serverkonten für diese Währung vorhanden.</div>'}</div>
         <p class="muted small">Kontostände gelten bis heute; künftige Buchungen bleiben separate Prognosen.</p>
-        ${data.session?.canWrite?`<p><a class="btn secondary" href="${esc((data.server.endsWith('/')?data.server.slice(0,-1):data.server)+'/#kontostaende')}" target="_blank" rel="noopener noreferrer">Kontostand im Dashboard abgleichen</a></p>
-        <p class="muted small">Der Saldoabgleich benötigt eine eigene Serverfunktion und erfolgt derzeit im Dashboard-Browser.</p>`:''}</div>
+        ${canReconcile(data.session,data.reconciliationSupported)&&!data.pending?
+          '<p><button class="btn secondary" data-action="server-reconcile-account">Kontostand abgleichen</button></p>':
+          '<p class="muted small">Direkter Kontostandsabgleich derzeit nicht verfügbar (Serverfunktion oder Schreibrecht fehlt).</p>'}</div>
       </details>
       ${comparison}
       <section class="card"><div class="section-title"><h2>Buchungen</h2><span class="muted small" id="server-home-booking-count">${homeResults.length} Treffer</span></div>

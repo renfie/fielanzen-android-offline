@@ -128,8 +128,14 @@ export function parsePending(input:string):PendingWrite|null{
   if(!input)return null;
   let p:unknown;try{p=JSON.parse(input);}catch{throw new Error('Gespeicherte Serveroperation ist beschädigt.');}
   if(!obj(p)||!['POST','PUT','DELETE'].includes(String(p.method))||typeof p.server!=='string'||typeof p.path!=='string'||
-    !/^\/api\/mobile\/v1\/(?:bookings(?:\/\d+)?|recurring(?:\/\d+(?:\/(?:mode|post))?)?)$/.test(p.path)||typeof p.idempotencyKey!=='string'||
+    !/^\/api\/mobile\/v1\/(?:bookings(?:\/\d+)?|recurring(?:\/\d+(?:\/(?:mode|post))?)?|accounts\/[1-9]\d*\/reconcile)$/.test(p.path)||typeof p.idempotencyKey!=='string'||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(p.idempotencyKey))
     throw new Error('Gespeicherte Serveroperation hat ein ungültiges Format.');
+  if(/^\/api\/mobile\/v1\/accounts\/[1-9]\d*\/reconcile$/.test(p.path)){
+    if(p.method!=='POST'||!obj(p.data)||!Number.isSafeInteger(p.data.actual_balance_minor)||
+      !Number.isSafeInteger(p.data.expected_balance_minor)||typeof p.data.note!=='string'||
+      p.data.note.length>500||Object.keys(p.data).sort().join(',')!=='actual_balance_minor,expected_balance_minor,note')
+      throw new Error('Gespeicherter Saldoabgleich ist beschädigt.');
+  }
   return p as unknown as PendingWrite;
 }

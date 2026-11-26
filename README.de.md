@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Lizenziert unter [GNU GPL v2 ausschließlich](LICENSE).
 
-**Aktueller Quellstand (`developer`):** `0.1.0-alpha.36` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
+**Aktueller Quellstand (`developer`):** `0.1.0-alpha.37` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 
@@ -39,7 +39,7 @@ Benötigt werden Node.js 22+, Java 21 und ein Android SDK. Das VM-Skript kann fe
 bash scripts/build-android-vm.sh
 ```
 
-Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.36-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
+Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.37-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
 
 **Vor jedem Update:** Vollständige JSON-Sicherung außerhalb der App erstellen. Zur Aktualisierung müssen **Paketkennung und Signaturschlüssel identisch** sein. Nicht deinstallieren und keine App-Daten löschen, um einen Signaturfehler zu umgehen. Siehe [VM-Anleitung](ANLEITUNG-ANDROID-DEBIAN.txt) und [Installationsanleitung](docs/INSTALLATION.de.md).
 
@@ -115,3 +115,9 @@ Beide Datenquellen nutzen dieselbe Android-Ansicht. **Lokal** berechnet die App 
 ## Diagrammdarstellung in Android WebView (Alpha 36, developer)
 
 Die Kreissegmente der Historie und die Monatsbalken werden jetzt als native SVG-Elemente mit Präsentationsattributen erzeugt, statt gesperrter dynamischer Inline-CSS-Eigenschaften. Die restriktive `style-src self`-Sicherheitsrichtlinie bleibt unverändert. Farbliche Legenden und Abstände der Kategorienliste wurden für Smartphones überarbeitet. Lokale und Server-Historie verwenden dieselbe Grafikkomponente. Keine Änderungen an Finanzdaten, Datenbankschema, Sicherung oder Schreib-API. Anzeigeprüfung auf einem echten Android-Gerät steht aus.
+
+## Kontostandsabgleich direkt im Servermodus (Alpha 37, developer)
+
+Unter **Übersicht → Kontostände → Kontostand abgleichen** öffnet sich auch im Servermodus die bekannte Abgleichmaske: Konto, heutiger Ist-Saldo, Prognose inkl. künftiger Buchungen, Eingabe des tatsächlichen Kontostands, Vorschau-Differenz und Notiz. Es erfolgt keine Weiterleitung. Freigabe nur bei `account_reconciliation: true`, gültigem Write-Key, berechtigter Rolle und `finance_mode=web`. Die verbindliche Differenz wird ausschließlich vom Server gebucht, niemals in der lokalen SQLite-Datenbank. Negative Salden sowie Währungen mit null bis drei Nachkommastellen sind berücksichtigt.
+
+Der POST wird vor dem Senden mit Konto, Body und UUID verschlüsselt als offener Auftrag gespeichert. Bei Timeout oder Verbindungsabbruch kann **nur derselbe Request mit derselben UUID** manuell erneut gesendet werden. Bei HTTP 409 werden frische Kontostände angezeigt und eine erneute bewusste Bestätigung verlangt; kein automatisches Überschreiben. Nach HTTP 200 werden Konten, Buchungen und die angezeigten Monatswerte neu geladen. Die lokale Abgleichfunktion und Sicherungsformate bleiben unverändert. Praxistest auf Android steht aus.

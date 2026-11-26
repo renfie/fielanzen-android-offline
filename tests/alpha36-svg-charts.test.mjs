@@ -75,5 +75,5 @@ test('external CSS is present and strict CSP remains active',()=>{
  assert.match(htmlIndex,/style-src 'self'/);
  assert.doesNotMatch(htmlIndex,/unsafe-inline/);
  assert.doesNotMatch(history,/style=/);
- assert.match(read('package.json'),/0\.1\.0-alpha\.36/);
+ assert.match(JSON.parse(read('package.json')).version,/^0\.1\.0-alpha\.\d+$/);
 });
