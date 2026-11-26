@@ -2,6 +2,13 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.2.0 (26.11.2026) – Erstes reguläres Android-Release
+- Entwicklungsfunktionen aus Alpha 32–37 als reguläre Version 0.2.0 zusammengefasst: einheitliche Oberfläche, Monatsvergleich, Historie mit SVG-Diagrammen, wiederkehrende Serverregeln und direkter Kontostandsabgleich.
+- GitHub Actions veröffentlicht die signierte APK nun **ohne Pre-release-Markierung** und mit vollständigen zweisprachigen [Änderungsnotizen](docs/releases/v0.2.0.md), SHA256-Prüfsumme und Tag-Quelltext.
+- Native Android-Versionsnummer monoton von 36 auf 20000 erhöht; Paketkennung, Keystore, Finanzdaten, Backupformat und Schnittstellen bleiben unverändert.
+- Historische Alpha-Releases erhalten nachträglich eigene ausführliche Release-Notizen; deren historische Tags und Prerelease-Kennzeichnung bleiben erhalten.
+- Bestehende automatische Tests und der signierte Build werden vor der Veröffentlichung ausgeführt; ein realer Gerätetest ist weiterhin erforderlich.
+
 ## 0.1.0-alpha.37 (26.11.2026) – Kontostandsabgleich direkt in Android (main)
 - **Dokumentationsbereinigung:** Nicht mehr benötigte Alpha-Testpläne, alte Mobile-API-Übergaben und überholte Planungsdokumente aus `docs/` entfernt. READMEs, Entwicklungs-, Installations-, Sicherheits- und Release-Hinweise auf aktuellen Stand gebracht, ohne neue Version oder App-Datenänderung.
 - Die vorhandene Kontostandsabgleich-Maske steht nun ohne Web-Weiterleitung auch im Dashboard-Servermodus zur Verfügung. Lokale Finanzdaten und deren Abgleichroutine bleiben unverändert.

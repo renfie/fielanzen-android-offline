@@ -5,7 +5,7 @@
 - This repository contains **only** the Android app. Server/API changes belong to [financisto-dashboard](https://github.com/renfie/financisto-dashboard).
 - `main` contains the latest deliberately adopted Android source snapshot; `developer` contains evolving debug-test features. Do not merge the latter or bump `main`'s version as a side effect of documentation maintenance.
 - Use short-lived feature branches and review changes before merging.
-- Android versions follow `0.1.0-alpha.*`; dashboard versions are independent. Matching release tags use `v0.1.0-alpha.N`. A version increase on `main` automatically requests a signed prerelease; documentation-only commits do not.
+- Regular Android versions follow SemVer (starting with `0.2.0`); historic `0.1.0-alpha.N` versions remain. Dashboard versions are independent. Regular tags use `v0.2.0`, `v0.2.1` etc. A version increase on `main` requests a signed regular release with bilingual notes; documentation-only commits do not.
 - Do not change package ID `de.fielanzen.offline`, Android signing identity or persistent SQLite schema without a backward-compatibility plan.
 - Never silently omit recurring rules from an exported backup. Test both manual and automatic backup paths.
 - Run source build, current regression tests, then a native APK build and real-device tests before advertising a tested release.

@@ -35,7 +35,7 @@ test('GPL v2 rights and duties are directly visible in both settings views',()=>
 });
 test('Android alpha 30 keeps the package identity and finance export calls',()=>{
  const currentVersion=JSON.parse(read('package.json')).version;
- assert.match(currentVersion, /^0\.1\.0-alpha\.\d+$/);
+ assert.match(currentVersion, /^(?:\d+\.\d+\.\d+|0\.1\.0-alpha\.\d+)$/);
  assert.match(read('capacitor.config.ts'),/de\.fielanzen\.offline/);
  assert.ok(read('src/main.ts').includes("export const APP_VERSION='"+currentVersion+"'"));
  assert.equal((read('src/main.ts').match(/exportFinancistoCompatible\(state\)/g)||[]).length,4);

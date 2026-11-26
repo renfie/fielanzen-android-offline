@@ -12,8 +12,8 @@
 
 ## Releases
 
-- Android-Versionen heißen `0.1.0-alpha.N`, Releases verwenden das passende Git-Tag `v0.1.0-alpha.N` und die Changelogs im Repository-Stamm. Eine reine Dokumentationsänderung löst keinen signierten Release aus.
-- `developer` baut Debug-Test-APKs; ein Versionsanstieg auf `main` fordert automatisch einen signierten Prerelease an. Vor der Übernahme nach `main` den nativen Build und möglichst den Gerätetest durchführen.
+- Reguläre Android-Versionen folgen SemVer, derzeit `0.2.0`; passende Git-Tags heißen `v0.2.0`, `v0.2.1` usw. Die früheren `0.1.0-alpha.N`-Versionen bleiben historisch erhalten. Ein Dokumentationscommit ohne Versionswechsel erzeugt keinen neuen signierten Release.
+- `developer` baut Debug-Test-APKs; ein Versionsanstieg auf `main` fordert automatisch einen **regulären signierten Release** samt Änderungsnotizen an. Vor der Übernahme nach `main` den nativen Build und möglichst den Gerätetest durchführen.
 - In diesem Repository wird der **Quellcode** versioniert. `android/`, `node_modules/`, Debug-/Release-APKs, lokale Schlüssel, Finanzdaten und generierte SDK-Dateien werden nicht eingecheckt.
 
 ## Anforderungen an Änderungen

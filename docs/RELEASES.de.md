@@ -5,7 +5,7 @@
 ## Was automatisch passiert
 
 - Jeder Push auf `main` baut nach erfolgreicher Prüfung eine **Debug-APK** als GitHub-Actions-Artefakt. Ihr automatisch generierter Debug-Schlüssel ist **nicht dauerhaft stabil**; sie ist kein verlässliches Update für eine schon installierte Version.
-- Ein Versionswechsel auf `main` startet den signierten Release-Build automatisch; ein passendes Git-Tag oder ein ausdrücklich gestarteter manueller Workflow sind weiterhin möglich. Nur wenn die vier GitHub-Secrets vorhanden sind und der Build samt Signaturprüfung erfolgreich ist, wird ein **signiertes APK** samt SHA256 als GitHub-*Prerelease* veröffentlicht. Die Quellcode-ZIP-Datei gehört über das Tag dazu.
+- Ein Versionswechsel auf `main` startet den signierten Release-Build automatisch; ein passendes Git-Tag oder ein ausdrücklich gestarteter manueller Workflow sind weiterhin möglich. Nur wenn die vier GitHub-Secrets vorhanden sind und der Build samt Signaturprüfung erfolgreich ist, wird ein **signiertes APK** samt SHA256 als regulärer GitHub-*Release* veröffentlicht (für stabile SemVer-Versionen wie 0.2.0). Die Quellcode-ZIP-Datei gehört über das Tag dazu.
 - Das separate Docker-Dashboard wird dabei weder verändert noch veröffentlicht.
 
 ## Einmalig: eigener Signaturschlüssel
@@ -39,15 +39,15 @@ GitHub Secrets sind für die signierende Workflow-Ausführung gedacht. Der priva
 
 ## Release nach Versionswechsel: automatisch
 
-Nach der einmaligen Einrichtung der vier Secrets benötigt der reguläre Release **keinen persönlichen GitHub-Token und keine Linux-VM**. Wird auf Branch `main` die Versionsnummer in `package.json` von beispielsweise `0.1.0-alpha.N` auf `0.1.0-alpha.(N+1)` erhöht, prüft GitHub Actions den Versionswechsel und baut automatisch die signierte APK mit SHA256. Erst nach erfolgreichem Build, Tests und Signaturprüfung erzeugt der Workflow das passende Versionstag und veröffentlicht den Prerelease unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
+Nach der einmaligen Einrichtung der vier Secrets benötigt der reguläre Release **keinen persönlichen GitHub-Token und keine Linux-VM**. Wird auf Branch `main` die Versionsnummer in `package.json` von beispielsweise `0.2.0` auf `0.2.1` erhöht, prüft GitHub Actions den Versionswechsel und baut automatisch die signierte APK mit SHA256. Erst nach erfolgreichem Build, Tests und Signaturprüfung erzeugt der Workflow das passende Versionstag und veröffentlicht die normale Release-Version samt deutsch-englischem Änderungsverlauf unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
 
 Quellcode-/Dokumentationsänderungen ohne neue Versionsnummer erzeugen dagegen nur Debug-Test-APKs, **keinen neuen Release**.
 
 ### Optionaler manueller Weg
 
-1. [Actions → Android APK – build and signed prerelease](https://github.com/renfie/fielanzen-android-offline/actions/workflows/android-apk.yml) öffnen.
+1. [Actions → Android APK – build and signed release](https://github.com/renfie/fielanzen-android-offline/actions/workflows/android-apk.yml) öffnen.
 2. **Run workflow** auswählen, Branch **main** wählen.
-3. **Publish signed prerelease for package.json version** aktivieren und starten.
+3. **Publish a signed release for package.json version** aktivieren und starten.
 4. Nicht zusätzlich im Menü „Draft a new release“ veröffentlichen. Der Workflow erstellt den Release selbst und lehnt doppelte Veröffentlichungen derselben Version ab.
 
 Bei späteren Releases müssen die Versionsangaben im App-Quelltext, in `package.json` und in den Tests zusammenpassen. Die vorhandenen Secrets bleiben unverändert. Ein über Git gepushtes passendes Versionstag funktioniert alternativ weiterhin.
@@ -58,8 +58,14 @@ Die bisher auf der Linux-VM erstellten `*-debug.apk` können mit einem anderen Z
 
 **Vor einem Signaturwechsel:** JSON-Vollsicherung extern aufbewahren; separate Wiederherstellbarkeit prüfen. Nicht deinstallieren, bevor die Daten und der Migrationsweg gesichert sind. Für nahtlose Updates müsste derselbe ursprüngliche Signaturschlüssel genutzt werden – Debug-Schlüssel dauerhaft für öffentliche Releases zu verwenden ist aus Sicherheitsgründen nicht empfehlenswert.
 
-Die APK ist ein Alpha-Release; auch ein grüner GitHub-Build ersetzt keinen Funktionstest auf einem echten Android-Gerät.
+Version 0.2.0 ist ein regulärer Release und kein Alpha-Prerelease mehr. Ein erfolgreicher GitHub-Build ersetzt dennoch keinen Funktionstest auf einem echten Android-Gerät.
 
 ## Dokumentationsbereinigung ohne Release
 
 Die Branches `main` und `developer` werden unabhängig gepflegt. Ein Commit, der nur README, Changelogs, Installationshinweise oder `docs/` bereinigt, darf `package.json` **nicht** erhöhen. Dann erstellt die CI lediglich eine Debug-Test-APK. Die Übernahme neuer Funktionen von `developer` nach `main` ist eine separate, bewusst freizugebende Release-Entscheidung.
+
+## Versionshistorie und Release-Notizen
+
+Bei jedem Versionsanstieg auf `main` werden nun ausführliche **zweisprachige Release-Notizen** aus der geprüften Datei `docs/releases/vVERSION.md` eingebunden. Für 0.2.0 liegt sie unter [v0.2.0.md](releases/v0.2.0.md). Die vier älteren Alpha-Releases erhalten ihre jeweiligen Changelog-Abschnitte nachträglich als Beschreibungen; ihre historischen Tags und Pre-release-Markierungen bleiben dabei erhalten. Bei einem neuen regulären Release wird **kein** `--prerelease`-Flag gesetzt.
+
+Die Android-`versionCode`-Berechnung für reguläre Versionen lässt 0.2.0 mit Code 20000 auf Alpha 37 (Code 36) folgen. App-ID und Signieridentität bleiben unverändert.

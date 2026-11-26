@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## 0.2.0 (2026-11-26) – First regular Android release
+- Consolidate alphas 32–37 into regular version 0.2.0: unified UI, month comparisons, SVG history, server recurring rules and native balance reconciliation.
+- Signed APK is published **without the prerelease flag**, with detailed bilingual [release notes](docs/releases/v0.2.0.md), SHA256 checksum and tagged source.
+- Increase native versionCode from 36 to 20000 while preserving the package ID, signing configuration, financial data, backups and Mobile API semantics.
+- Backfill historic alpha release descriptions while keeping their original tags and prerelease status.
+- Automated tests and signed APK build run before publication; on-device testing is still recommended.
+
 ## 0.1.0-alpha.37 (2026-11-26) – Native Dashboard account reconciliation (main)
 - **Documentation cleanup:** Removed obsolete milestone checklists, historical Mobile API handoffs, and superseded planning files from `docs/`. Refreshed README, development, installation, security and release guidance without changing the app version or finance data.
 - Use the existing local-style balance reconciliation form inside Android server mode; remove the link to the web Dashboard. Local SQLite finances and the offline reconciliation routine remain unchanged.

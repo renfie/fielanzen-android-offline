@@ -62,10 +62,22 @@ for f in (res/'xml'/'backup_rules.xml',res/'xml'/'data_extraction_rules.xml'):
 
 # Keep package ID and monotonically increasing Android versionCode stable across releases.
 version=json.loads((root/'package.json').read_text())['version']
-match=re.fullmatch(r'0\.1\.0-alpha\.(\d+)',version)
-if not match:sys.exit('Release verlangt package.json version 0.1.0-alpha.N; VersionCode nicht eindeutig.')
-version_code=int(match.group(1))-1  # Alpha 28 used versionCode 27.
-if version_code<1:sys.exit('Ungültiger Android versionCode.')
+# Keep historic 0.1.0-alpha.N APKs upgradeable: alpha.37 had code 36.
+# Stable SemVer 0.X.Y starts at X*10000 + Y*100. Thus 0.2.0 = 20000,
+# and all stable updates monotonically increase. No change to package/signing.
+alpha=re.fullmatch(r'0\.1\.0-alpha\.(\d+)',version)
+stable=re.fullmatch(r'(\d+)\.(\d+)\.(\d+)',version)
+if alpha:
+    version_code=int(alpha.group(1))-1
+elif stable:
+    major,minor,patch=map(int,stable.groups())
+    if major>20 or minor>99 or patch>99:
+        sys.exit('SemVer außerhalb unterstützter VersionCode-Bereiche.')
+    version_code=major*1000000+minor*10000+patch*100
+else:
+    sys.exit('Ungültige Versionskennung: erwartet SemVer oder historische 0.1.0-alpha.N.')
+if not 36 < version_code <= 2100000000:
+    sys.exit('versionCode muss über Alpha 37 liegen und im Android-Bereich bleiben.')
 gradle=app_gradle.read_text()
 new,amount=re.subn(r'\bversionCode\s*=?\s*\d+', f'versionCode {version_code}',gradle,count=1)
 if not amount:sys.exit('app/build.gradle: versionCode nicht gefunden.')

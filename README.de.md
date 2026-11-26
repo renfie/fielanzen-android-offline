@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Lizenziert unter [GNU GPL v2 ausschließlich](LICENSE).
 
-**Quellstand dieses Branches:** `0.1.0-alpha.37` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
+**Aktuelle Version:** `0.2.0` · **Release:** reguläre Version · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 
@@ -39,7 +39,7 @@ Benötigt werden Node.js 22+, Java 21 und ein Android SDK. Das VM-Skript kann fe
 bash scripts/build-android-vm.sh
 ```
 
-Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.1.0-alpha.37-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
+Nach einem erfolgreichen Build liegt die APK unter `release/FieLanzen-Offline-0.2.0-debug.apk`. Das Skript lädt nichts zu GitHub hoch und verändert das Dashboard nicht.
 
 **Vor jedem Update:** Vollständige JSON-Sicherung außerhalb der App erstellen. Zur Aktualisierung müssen **Paketkennung und Signaturschlüssel identisch** sein. Nicht deinstallieren und keine App-Daten löschen, um einen Signaturfehler zu umgehen. Siehe [VM-Anleitung](ANLEITUNG-ANDROID-DEBIAN.txt) und [Installationsanleitung](docs/INSTALLATION.de.md).
 
@@ -80,7 +80,7 @@ Keine echten Finanzdaten, `.backup`-Dateien, Datenbanken, API-Schlüssel, Client
 
 ## Automatische APKs und signierte GitHub-Releases
 
-Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**. Sobald die Android-Versionsnummer in `package.json` auf `main` steigt (z. B. von Alpha 29 auf Alpha 30), erstellt GitHub Actions **automatisch** die neue signierte APK und ihre SHA256-Prüfsumme und veröffentlicht beides unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases). Das passende Git-Tag wird automatisch erzeugt. **Weder persönlicher GitHub-Token noch Linux-VM oder zusätzlicher Klick** sind beim regulären Versionswechsel erforderlich. Der manuelle Weg „Run workflow → Publish signed prerelease“ bleibt optional und verhindert doppelte Releases. Signaturschlüssel und Passwörter bleiben als GitHub-Secrets und in deiner unabhängigen Sicherung erhalten.
+Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**. Sobald die Android-Versionsnummer in `package.json` auf `main` steigt (z. B. von 0.2.0 auf 0.2.1), erstellt GitHub Actions **automatisch** die neue signierte APK und ihre SHA256-Prüfsumme und veröffentlicht beides unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases). Das passende Git-Tag wird automatisch erzeugt. **Weder persönlicher GitHub-Token noch Linux-VM oder zusätzlicher Klick** sind beim regulären Versionswechsel erforderlich. Der manuelle Weg „Run workflow → Publish signed prerelease“ bleibt optional und verhindert doppelte Releases. Signaturschlüssel und Passwörter bleiben als GitHub-Secrets und in deiner unabhängigen Sicherung erhalten.
 
 [Release-Anleitung (Deutsch)](docs/RELEASES.de.md) · [English](docs/RELEASES.en.md).
 
@@ -90,7 +90,7 @@ Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**.
 
 **Statusleisten-Schutz:** Android verwendet nur noch einen nativen WindowInsets-Mechanismus für Statusleiste, Kameraaussparung, untere Systemnavigation und Tastatur (keine konkurrierenden Capacitor-/CSS-Abstände). In Web/PWA bleibt der CSS-Safe-Area-Fallback. Ein echter Gerätetest steht noch aus.
 
-## Aktueller Funktionsstand: Alpha 37
+## Aktueller Funktionsstand: Version 0.2.0
 
 - **Gleiche Android-Oberfläche:** Übersicht und Buchungen sind lokal wie im Servermodus einheitlich gestaltet. Lokale SQLite-Daten und Serverdaten bleiben vollständig getrennt.
 - **Historie:** Monatsvergleich, Filter, SVG-Balken und Kategorien-Kreisdiagramme. Im Servermodus stammen vollständige Monate aus `GET /api/mobile/v1/reports/monthly` bei aktivierter `monthly_reports`-Capability; unvollständige Buchungsseiten gelten nicht als vollständiger Monatsbericht.
@@ -99,3 +99,7 @@ Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**.
 - **Empfänger/Kategorien:** Tastaturfreundliche Vorschläge. Serverseitige Buchungssuche umfasst nur geladene Buchungsseiten; ältere Seiten können ausdrücklich nachgeladen werden.
 
 **Teststand:** Alpha 37 wurde in GitHub Actions automatisiert geprüft und als APK gebaut. Gerätetests bleiben gesondert erforderlich. Die aktuellen Schnittstellenverträge liegen im [Finanzdashboard](https://github.com/renfie/financisto-dashboard/tree/develop/package/docs), Änderungen seit früheren Alphas in den [Changelogs](CHANGELOG-OFFLINE.md).
+
+## Version 0.2.0 – reguläres Release
+
+Die bisherige Alpha-Versionierung wurde durch **0.2.0** ersetzt. Der signierte Release enthält eine APK, SHA256-Prüfsumme und zweisprachige [Änderungsnotizen](docs/releases/v0.2.0.md). Historische Alpha-Releases bleiben als frühere Testversionen erhalten. Die APK benötigt zur Aktualisierung einer bestehenden Installation dasselbe Signaturzertifikat. Ein echter Gerätetest bleibt empfohlen.
