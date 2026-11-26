@@ -87,3 +87,7 @@ Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**.
 **GPLv2 in der App:** Unter **Mehr → GPLv2 · Rechte & Pflichten** stehen die wichtigsten Nutzungs-/Änderungs-/Weitergaberechte und Pflichten bei Weitergabe unmittelbar im Einstellungsbereich, sowohl lokal als auch im Servermodus. Über **Volltext** sind der vollständige englische GPL-Text, der Gewährleistungsausschluss und die Hinweise zu Fremdsoftware auch offline erreichbar.
 
 **Statusleisten-Schutz:** Android verwendet nur noch einen nativen WindowInsets-Mechanismus für Statusleiste, Kameraaussparung, untere Systemnavigation und Tastatur (keine konkurrierenden Capacitor-/CSS-Abstände). In Web/PWA bleibt der CSS-Safe-Area-Fallback. Ein echter Gerätetest steht noch aus.
+
+## Einheitliche Oberfläche für lokale und Serverdaten (developer)
+
+Übersicht und Buchungen verwenden künftig dieselben Karten, Farben, Abstände, Einklapp- und Filterelemente. Der Servermodus bezieht Kontostände und Buchungen weiterhin **ausschließlich** aus der Dashboard-Mobile-API; die lokale SQLite-Datenbank wird weder angezeigt noch mit Serverdaten vermischt. Bei der Server-Suche und den Monatsauswertungen gelten die **bereits geladenen API-Seiten**: Es wird ausdrücklich auf mögliche unvollständige historische Monatswerte hingewiesen. Serverseitige wiederkehrende Regeln sind über die aktuelle Mobile-API nicht abrufbar und werden daher nicht als lokale Regeln ausgegeben. Der separate developer-Branch erstellt Test-APKs, aber keine signierten Releases.

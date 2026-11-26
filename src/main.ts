@@ -26,10 +26,11 @@ import {validateRemoteDraft,parsePending,DashboardApiError} from './dashboard-pr
 import {secureSession} from './secure-session.js';
 import {mtlsHttp} from './mtls-http.js';
 import {connectWithOptionalClientCertificate} from './dashboard-connection.js';
-import {serverPageHtml,serverSettingsHtml,emptyServerData,formatMinor,serverBookingResultsHtml,filterRemoteBookings} from './server-ui.js';
+import {serverPageHtml,serverSettingsHtml,emptyServerData,formatMinor,serverBookingResultsHtml,displayedServerBookings,serverBookingSummaryHtml} from './server-ui.js';
 import type {ServerViewData} from './server-ui.js';
 import {readBookingList,saveBookingList,bookingListSettingsHtml,sortTransactionRows} from './booking-list-preferences.js';
 import {appLock} from './app-lock.js';
+import {bookingCardHtml} from './booking-card-ui.js';
 import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
@@ -352,28 +353,28 @@ function accountCards(): string {
 function bookingListItem(b: Booking): string {
   const expanded = expandedBookingId === b.id;
   const title = b.type === 'transfer' ? `${getAccount(b.accountId)} → ${getAccount(b.otherAccountId!)}` : (getPayee(b.payeeId) || getCategory(b.categoryId));
-  const meta = `${friendlyDate(b.date)} · ${esc(b.type === 'transfer' ? 'Umbuchung' : getCategory(b.categoryId))}${b.amountCents===0?' · Nullbuchung':''}`;
-  const tags=`<span class="booking-type-chip ${b.type}">${esc(kindName(b.type))}</span>${b.recurringRuleId?'<span class="booking-type-chip recurring">Wiederkehrend</span>':''}`;
-  const prefix = b.amountCents===0 ? '' : b.type === 'income' ? '+' : b.type === 'expense' ? '−' : '⇄ ';
-  const rows = [
-    `<div><dt>Art</dt><dd>${esc(kindName(b.type))}${b.amountCents===0?' · Nullbuchung (keine Saldoänderung)':''}</dd></div>`,
-    `<div><dt>Datum</dt><dd>${friendlyDate(b.date)}</dd></div>`,
-    `<div><dt>Quellkonto</dt><dd>${esc(getAccount(b.accountId))}</dd></div>`,
-    b.type === 'transfer' ? `<div><dt>Zielkonto</dt><dd>${esc(getAccount(b.otherAccountId!))}</dd></div>`
-      : `<div><dt>Kategorie</dt><dd>${esc(getCategory(b.categoryId))}</dd></div>`,
-    b.type !== 'transfer' && b.payeeId !== null ? `<div><dt>Empfänger / Zahler</dt><dd>${esc(getPayee(b.payeeId))}</dd></div>` : '',
-    b.note ? `<div class="booking-detail-note"><dt>Notiz</dt><dd>${esc(b.note)}</dd></div>` : ''
-  ].filter(Boolean).join('');
-  return `<article class="booking-entry ${expanded ? 'is-expanded' : ''}">
-    <button type="button" class="booking" data-action="toggle-booking" data-id="${b.id}" aria-expanded="${expanded}" aria-controls="booking-details-${b.id}">
-      <div class="info"><div class="booking-title">${esc(title)}</div><div class="booking-meta">${meta}</div><div class="booking-tags">${tags}</div></div>
-      <div class="booking-side"><div class="booking-amount ${b.type}">${prefix}${formatEuro(b.amountCents)}</div><span class="booking-chevron" aria-hidden="true">${expanded ? '⌃' : '⌄'}</span></div>
-    </button>
-    ${expanded ? `<div class="booking-details" id="booking-details-${b.id}"><dl class="detail-grid">${rows}</dl>
-      <div class="btn-row booking-actions"><button type="button" class="btn secondary" data-action="clone-booking" data-id="${b.id}">Klonen</button>
-      <button type="button" class="btn primary" data-action="edit-booking" data-id="${b.id}">Bearbeiten</button>
-      <button type="button" class="btn danger" data-action="delete-booking" data-id="${b.id}">Löschen</button></div></div>` : ''}
-  </article>`;
+  const prefix = b.amountCents === 0 ? '' : b.type === 'income' ? '+' : b.type === 'expense' ? '−' : '⇄ ';
+  return bookingCardHtml({
+    id:b.id, source:'local', expanded, title,
+    dateLabel:friendlyDate(b.date),
+    categoryLabel:b.type === 'transfer' ? 'Umbuchung' : getCategory(b.categoryId),
+    kind:b.type, kindLabel:kindName(b.type), amountLabel:prefix+formatEuro(b.amountCents),
+    recurring:Boolean(b.recurringRuleId), zeroBooking:b.amountCents===0,
+    details:[
+      {label:'Art',value:kindName(b.type)+(b.amountCents===0?' · Nullbuchung (keine Saldoänderung)':'')},
+      {label:'Datum',value:friendlyDate(b.date)},
+      {label:'Quellkonto',value:getAccount(b.accountId)},
+      b.type==='transfer'?{label:'Zielkonto',value:getAccount(b.otherAccountId!)}
+        :{label:'Kategorie',value:getCategory(b.categoryId)},
+      ...(b.type!=='transfer'&&b.payeeId!==null?[{label:'Empfänger / Zahler',value:getPayee(b.payeeId)}]:[]),
+      ...(b.note?[{label:'Notiz',value:b.note,isNote:true}]:[])
+    ],
+    actions:[
+      {action:'clone-booking',title:'Klonen',style:'secondary'},
+      {action:'edit-booking',title:'Bearbeiten',style:'primary'},
+      {action:'delete-booking',title:'Löschen',style:'danger'}
+    ]
+  });
 }
 function homeBookings():Booking[]{return localSearchMatches(sortedLocalBookings(),homeBookingQuery);}
 function bookingsHtml(forHome=false): string {
@@ -990,7 +991,7 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
     remote.session=session; // Authenticated; a faulty booking row must not masquerade as bad credentials.
     const [accounts,categories,payees,first]=await Promise.all([client.accounts(),client.categories(),client.payees(),client.bookings()]);
     const pending=parsePending((await secure.getPending()).json);
-    remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize};
+    remote={...remote,session,accounts,categories,payees,bookings:first.items,nextBefore:first.nextBefore,pending,error:'',loading:false,visibleCount:readBookingList().pageSize,homeVisibleCount:readBookingList().pageSize,expandedBookingId:null};
     // This optional flag currently only specifies the future pagination policy.
     void preservePages;
   }catch(error){
@@ -1004,8 +1005,7 @@ async function loadRemoteServer(preservePages=false):Promise<void>{
 async function loadMoreRemote(forHome=false):Promise<void>{
   if(!serverMode||serverLoadBusy)return;
   const desired=(forHome?remote.homeVisibleCount:remote.visibleCount)+readBookingList().pageSize;
-  const query=forHome?remote.searchHome:remote.searchBookings;
-  const matches=()=>filterRemoteBookings(remote.bookings,query,remote.accounts,remote.categories).length;
+  const matches=()=>displayedServerBookings(remote,forHome?'home':'bookings').length;
   if(matches()>=desired||!remote.nextBefore){
     if(forHome)remote.homeVisibleCount=desired;else remote.visibleCount=desired;
     render();return;
@@ -1491,6 +1491,23 @@ async function click(action: string, id?: number): Promise<void> {
         }catch{remote.error='Standardkonto konnte nicht gespeichert werden.';}
         render();return;
       }
+      case 'toggle-server-booking':{
+        remote.expandedBookingId=remote.expandedBookingId===id?null:(id??null);
+        const root=document.querySelector('#server-booking-results');
+        if(root)root.innerHTML=serverBookingResultsHtml(remote,view==='home'?'home':'bookings');
+        return;
+      }
+      case 'server-reset-filters':{
+        remote.period='30';remote.periodExplicit=false;remote.kindFilter='all';remote.accountFilter='all';
+        remote.categoryFilter='all';remote.dateFrom='';remote.dateTo='';remote.searchBookings='';
+        remote.visibleCount=readBookingList().pageSize;remote.expandedBookingId=null;render();return;
+      }
+      case 'server-previous-report-month':{
+        remote.reportMonth=monthOffset(remote.reportMonth,-1);render();return;
+      }
+      case 'server-next-report-month':{
+        remote.reportMonth=monthOffset(remote.reportMonth,1);render();return;
+      }
       case 'server-reload':await loadRemoteServer();return;
       case 'server-more-bookings':await loadMoreRemote(view==='home');return;
       case 'server-add-booking':serverCreateDialog();return;
@@ -1691,6 +1708,8 @@ async function click(action: string, id?: number): Promise<void> {
 document.addEventListener('toggle',e=>{
   const el=e.target as HTMLElement;
   if(el instanceof HTMLDetailsElement && el.id==='home-account-balances')homeBalancesOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-home-account-balances')remote.balancesOpen=el.open;
+  if(el instanceof HTMLDetailsElement && el.id==='server-booking-advanced-filters')remote.filtersOpen=el.open;
   if(el instanceof HTMLDetailsElement && el.id==='booking-advanced-filters')bookingFiltersOpen=el.open;
 },true);
 document.addEventListener('click',e=>{
@@ -1708,6 +1727,7 @@ document.addEventListener('change',e=>{
     visibleHomeBookingCount=readBookingList().pageSize;
     remote.visibleCount=readBookingList().pageSize;
     remote.homeVisibleCount=readBookingList().pageSize;
+    remote.expandedBookingId=null;
     expandedBookingId=null;
     render();return;
   }
@@ -1718,6 +1738,25 @@ document.addEventListener('change',e=>{
     void storage.saveSettings(next).then(async()=>{state=await storage.read();scheduleSnapshotStaging();render();}).catch(err=>{message=String(err);render();});return;
   }
   const element = e.target as HTMLSelectElement;
+  if(serverMode && element.id.startsWith('server-filter-')){
+    switch(element.id){
+      case 'server-filter-period':remote.period=element.value as typeof remote.period;remote.periodExplicit=true;break;
+      case 'server-filter-kind':remote.kindFilter=element.value as typeof remote.kindFilter;break;
+      case 'server-filter-account':remote.accountFilter=element.value;break;
+      case 'server-filter-category':remote.categoryFilter=element.value;break;
+      case 'server-filter-from':remote.dateFrom=element.value;break;
+      case 'server-filter-to':remote.dateTo=element.value;break;
+      default:return;
+    }
+    remote.visibleCount=readBookingList().pageSize;remote.expandedBookingId=null;render();return;
+  }
+  if(serverMode && element.id==='server-report-month'){
+    if(/^\d{4}-(0[1-9]|1[0-2])$/.test(element.value))remote.reportMonth=element.value;
+    render();return;
+  }
+  if(serverMode && element.id==='server-report-account-filter'){
+    remote.reportAccountFilter=element.value;render();return;
+  }
   if(element.id==='audit-choice'){auditChoice=element.value;auditQuery='';auditRowsVisible=80;render();return;}
   if(element.id==='report-month'){
     if(/^\d{4}-(0[1-9]|1[0-2])$/.test(element.value))reportMonth=element.value;render();return;
@@ -1760,8 +1799,12 @@ document.addEventListener('input',e=>{
     const forHome=field.id==='server-home-search';
     if(forHome){remote.searchHome=field.value;remote.homeVisibleCount=readBookingList().pageSize;}
     else{remote.searchBookings=field.value;remote.visibleCount=readBookingList().pageSize;}
+    remote.expandedBookingId=null;
     const root=document.querySelector('#server-booking-results');
     if(root)root.innerHTML=serverBookingResultsHtml(remote,forHome?'home':'bookings');
+    const count=document.querySelector(forHome?'#server-home-booking-count':'#server-booking-count');
+    if(count)count.textContent=displayedServerBookings(remote,forHome?'home':'bookings').length+(forHome?' Treffer':' Buchungen');
+    if(!forHome){const summary=document.querySelector('#server-bookings-summary');if(summary)summary.innerHTML=serverBookingSummaryHtml(remote);}
     return;
   }
   if (!['booking-search','booking-quick-search'].includes(field.id)) return;

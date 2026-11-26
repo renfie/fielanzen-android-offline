@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## Developer branch (after Alpha 31) – Unified local and server UI
+- Local and server bookings share one card renderer, spacing, colors, tags, collapsed details, and action-button sizing.
+- Server overview and booking screens follow the local section order, account disclosure, month summary, search, and advanced filter controls.
+- Server reports retain the local visual layout while clearly marking totals computed from only fetched API pages as potentially incomplete. The current Mobile API does not provide server recurring rules; the app does not substitute local rules.
+- Authenticated server permissions, revision-checked writes, pending-operation protection, and separate local/server ledgers remain intact. No dashboard changes or signed release yet; test APK builds on developer.
+
+
 ## 0.1.0-alpha.31 (2026-11-23) – Copyright and SPDX source headers
 - Original TypeScript, Java, scripts, workflows and test sources now carry GPL-2.0-only SPDX and `Copyright (C) 2026 René Fieler (RenFie)` notices with syntax appropriate to each file. Generated code and third-party dependencies remain separately attributed.
 - The full copyright holder name appears in Settings → GPLv2 and the offline license dialog in local and server modes. The GPLv2 license text remains unchanged.

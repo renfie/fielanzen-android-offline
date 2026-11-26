@@ -20,7 +20,8 @@ test('local homepage uses same 30/50/100 preferences and incremental loading',()
   assert.match(main,/updateHomeResults\(\)/);
 });
 test('both server pages search cached pages and optionally fetch more; no dashboard code',()=>{
-  assert.match(server,/server-\$\{screen\}-search/);
+  assert.match(server,/server-home-search/);
+  assert.match(server,/server-bookings-search/);
   assert.match(server,/serverBookingResultsHtml\(data/);
   assert.match(server,/filterRemoteBookings\(/);
   assert.match(server,/Weitere Serverseiten durchsuchen/);
@@ -47,7 +48,7 @@ test('financisto export and original package identification unchanged',()=>{
   assert.match(source('package.json'),/0\.1\.0-alpha\.\d+/);
 });
 test('server search recognizes categories, payees, amounts and excludes unrelated rows',async()=>{
-  const m=await import('../preview/server-ui.js');
+  const m=await import('../preview/src/server-ui.js');
   const accounts=[{id:1,name:'Comdirect neu',currency:'EUR',symbol:'€',decimals:2,balanceMinor:0,projectedBalanceMinor:0,active:true,includedInTotal:true}];
   const categories=[{id:2,name:'Telekommunikation',kind:'expense'}];
   const bookings=[{id:3,revision:'rev',kind:'expense',date:'2026-11-21',accountId:1,toAccountId:null,categoryId:2,amountMinor:4298,payeeTitle:'Telekom',note:'Handy'}];

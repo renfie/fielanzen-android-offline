@@ -87,3 +87,7 @@ Every push to `main` without a **new version** builds a **debug test APK**. When
 **License in the app:** Under **Mehr → GPLv2 · Rechte & Pflichten**, both local and dashboard-server modes show the rights and distribution obligations directly. The full GPL v2 text, warranty notice and third-party notices remain bundled offline under **Volltext**.
 
 **Safe area:** Android uses a single native window-insets handler for status bar, display cutout, bottom navigation and on-screen keyboard (no conflicting Capacitor/CSS padding). Web/PWA continues to use CSS safe-area insets. Real-device verification is still required.
+
+## Unified UI for local and server data (developer)
+
+The overview and booking screens now use the **same booking-card renderer, spacing, colors, collapsed details and filter controls**. Server mode continues to read and write only via the Dashboard Mobile API; local SQLite financial data is never mixed into the server screens. Search and monthly summaries operate on **loaded server API pages only**, and reports explicitly warn about potentially incomplete history. Server-side recurring rules are not exposed by the current API, so they cannot be displayed or executed; local rules are not substituted. The separate developer branch builds test APKs without publishing signed releases.

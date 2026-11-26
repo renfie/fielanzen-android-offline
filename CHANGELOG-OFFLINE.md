@@ -2,6 +2,14 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## Entwicklerzweig (nach Alpha 31) – Einheitliche Oberfläche unabhängig von der Datenquelle
+- Gemeinsame Buchungskarten-Komponente für lokale und serverbasierte Buchungen: gleiches Layout, Farben, Kategorien, Statussymbole, Aufklappen und Schaltflächengrößen.
+- Dashboard-Startseite folgt der lokalen Übersicht mit Gesamtvermögen, einklappbaren Kontoständen, Monatsbereich und Buchungssuche; die serverseitige Buchungsübersicht erhält dieselbe Filter- und Sortierstruktur wie lokal.
+- Monatsberichte verwenden das lokale Darstellungsraster, kennzeichnen jedoch berechnete Werte aus nur geladenen API-Seiten als unvollständig. Wiederkehrende Serverregeln bleiben mangels Mobile-API unverfügbar; keine falsche Anzeige lokaler Regeln.
+- Server-Zugriffsrechte, revisionsgebundene Schreiboperationen, ausstehende Aufträge und Datenquellentrennung bleiben erhalten. Kein neues Finanzdatenformat und kein Dashboard-Update.
+- Noch **kein** Release: Änderungen nur auf developer, automatische Debug-APK zur Geräteprüfung.
+
+
 ## 0.1.0-alpha.31 (23.11.2026) – Copyright und Quellcode-Hinweise
 - Eigener Quellcode, native Android-Klassen, Skripte und Tests mit `SPDX-License-Identifier: GPL-2.0-only` sowie `Copyright (C) 2026 René Fieler (RenFie)` gekennzeichnet, passend zur jeweiligen Dateisyntax. Drittanbieter- und generierter Code bleibt unverändert.
 - Unter Mehr → GPLv2 · Rechte & Pflichten steht der volle Name sichtbar; ebenso im offline verfügbaren Lizenzdialog. Keine Änderung des GNU-GPLv2-Lizenzvolltexts.
