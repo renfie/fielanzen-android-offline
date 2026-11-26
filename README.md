@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Licensed under [GNU GPL v2 only](LICENSE).
 
-**Current source version (`main` and `developer`):** `0.1.0-alpha.37` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
+**Source version of this branch:** `0.1.0-alpha.37` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
 
 FieLanzen Offline is a separate Android application built with **TypeScript, Capacitor and SQLite**. Accounts, payees, categories, bookings, transfers, recurring rules and reports can be managed on the phone without a server. A separately enabled server mode connects to the [FieLanzen/Financisto Dashboard](https://github.com/renfie/financisto-dashboard) through its Mobile API. The two data sources are **not silently merged or synchronized**.
 
@@ -68,7 +68,9 @@ The focused source checks do not replace a complete Android APK build and a real
 - [English development notes](docs/DEVELOPMENT.en.md) · [Deutsch](docs/ENTWICKLUNG.md)
 - [English security and privacy](docs/SECURITY.en.md) · [Deutsch](docs/SICHERHEIT.md)
 - [Version history (EN)](CHANGELOG-OFFLINE.en.md) · [Version history (DE)](CHANGELOG-OFFLINE.md)
-- [Mobile API integration notes (German)](docs/DASHBOARD-MOBILE-API.md)
+- [Current Dashboard Mobile API documentation](https://github.com/renfie/financisto-dashboard/tree/develop/package/docs)
+- [Installation](docs/INSTALLATION.en.md) · [Deutsch](docs/INSTALLATION.de.md)
+- [Signed releases](docs/RELEASES.en.md) · [Deutsch](docs/RELEASES.de.md)
 
 ## Privacy, license and attribution
 
@@ -88,34 +90,12 @@ Every push to `main` without a **new version** builds a **debug test APK**. When
 
 **Safe area:** Android uses a single native window-insets handler for status bar, display cutout, bottom navigation and on-screen keyboard (no conflicting Capacitor/CSS padding). Web/PWA continues to use CSS safe-area insets. Real-device verification is still required.
 
-## Alpha 37 on main (26 November 2026)
+## Current functionality: Alpha 37
 
-The main branch now includes Alpha 32–37: unified local/server booking cards and suggestions, server recurring-rule management, complete server-side monthly and historical reports, SVG visualizations and direct server balance reconciliation. No local/server data synchronization or finance-schema migration is introduced. **On-device testing and signing compatibility must still be checked before installing an update.** Signed builds are available through [GitHub Releases](https://github.com/renfie/fielanzen-android-offline/releases) after the release workflow succeeds.
+- **Shared UI, isolated data:** Overview and booking screens look and work consistently in offline and server modes. Local SQLite records are never merged with Dashboard data.
+- **History:** Month comparisons, account/category/currency filters, SVG bars and category donuts. Server mode obtains complete monthly figures from `GET /api/mobile/v1/reports/monthly` when `monthly_reports: true`; partially loaded booking pages are never treated as complete reports.
+- **Recurring rules:** Server rules are retrieved and changed only when `recurring_rules: true` and the API permissions permit it. Offline rules remain independent.
+- **Reconciliation:** Available inside Android with `account_reconciliation: true`, a write-enabled key and `finance_mode=web`. The server alone persists adjustments. Ambiguous writes require manual replay with the exact original payload and UUID.
+- **Payees and categories:** Keyboard-aware suggestions. Server booking search operates on loaded pages and can fetch older pages explicitly.
 
-## Unified UI for local and server data
-
-The overview and booking screens now use the **same booking-card renderer, spacing, colors, collapsed details and filter controls**. Server mode continues to read and write only via the Dashboard Mobile API; local SQLite financial data is never mixed into the server screens. Individual booking searches still use paged API results. Complete monthly reports, historic comparisons and highlights instead use the Dashboard's full server-side reports when the corresponding capabilities are available; unavailable reports are not presented as complete. Server-side recurring rules are managed through the Dashboard Mobile API only when advertised; local recurring rules are never substituted. The developer branch continues to produce test APKs; main builds signed prereleases after version updates.
-
-## Server recurring rules – API-ready Android preview (developer)
-
-The Android server mode is prepared for the planned Dashboard Mobile API to create/edit rules, select Paused/Manual/Automatic modes, explicitly confirm due manual postings and archive rules. **These API endpoints are available in the Dashboard development API (1.9.62-dev.4); the app checks server capabilities at runtime.** Android enables this interface only after `/api/mobile/v1/capabilities` advertises `features.recurring_rules: true`; read/write permissions and admin-only automatic activation are enforced. Local rules remain separate, and the Dashboard alone schedules server postings. Uncertain writes remain secured in Android Keystore with their original idempotency key. [Backend implementation contract](docs/MOBILE-RECURRING-RULES-API.md).
-
-## Keyboard-aware payee and category suggestions (alpha.33, developer)
-
-Booking and recurring-rule forms in both modes now use a bounded floating suggestion list positioned against the Android visual viewport instead of a large fixed dropdown. Recently used items and prefix matches come first. New payee names remain free text; categories retain their existing explicit-selection and local creation rules. The server API, local data, and backups are unchanged. Real-device verification is pending.
-
-## Home comparison and server trend accuracy (alpha.34, developer)
-
-Local and server overviews now share selectable month A/B comparisons with currency, account and category filtering, plus a compact income/expense graphic. Remote account cards follow balance and active-state grouping and offer a link to the authenticated Dashboard for reconciliation; no unsupported reconciliation write is sent through the Mobile API. The Android monthly trend no longer draws misleading zero bars when history has not been fetched, and explicitly marks provisional figures. Up to three additional booking pages can be loaded per user action. Real-device testing and a dedicated authenticated server summary API are still pending.
-
-## Historical analysis (0.1.0-alpha.35, developer)
-
-The bottom navigation tab "Monat" has been replaced by **Historie**. Both local and server mode render the same native historical overview: selectable 2–36-month range, currency, account and category filters, period totals and averages, separate monthly income/expense bars and expense/income category donut charts. Locally, totals derive solely from on-device SQLite; future bookings are excluded. In server mode, complete monthly values come **only** from the authenticated Mobile API `/api/mobile/v1/reports/monthly` when `features.monthly_reports` is exactly `true`. If absent, incomplete, unavailable or unauthenticated, no cached bookings are treated as full-history totals. Highest individual income/expense will appear only when the Dashboard later supplies optional `highlights` fields; the UI clearly indicates their absence. No local data migration or server write endpoint change.
-
-## Android WebView charts (alpha.36, developer)
-
-Historical donut charts and proportional monthly bars now render as native inline SVG with explicit presentation attributes, rather than dynamically injected CSS `style` attributes. This works under the unchanged restrictive `style-src self` policy. Category legends use matching SVG color markers and the category list has tighter mobile spacing. Both local and server mode share the renderer; no changes to finance logic, Mobile API, local data, backups or server writes. Device display verification is pending.
-
-## Direct Dashboard account reconciliation (alpha.37)
-
-The home account panel now opens an in-app reconciliation dialog in both local and server mode. Local code and SQLite remain unchanged. In server mode the feature requires `features.account_reconciliation: true` and a write-enabled `finance_mode=web` admin/editor session. It shows today’s API balance, projected balance, an exact signed amount input (0–3 decimal places), a preview delta, and a note. The server alone creates the adjustment booking. Each POST is persisted in the secure Android pending-write store with a UUID **before** sending; uncertain responses can only be retried with that exact request/UUID. HTTP 409 refreshes the account and demands explicit reconfirmation when the current balance changes; no automatic conflict merge. On success account, booking, and visible monthly data are refreshed. The browser redirect has been removed. No local finance data or backup schema modifications. Physical-device validation is still required.
+**Verification:** Alpha 37 passed GitHub Actions tests and an APK build. Real-device verification remains a separate requirement. Current API contracts are maintained in [the Dashboard project](https://github.com/renfie/financisto-dashboard/tree/develop/package/docs), and historical changes are in the [change logs](CHANGELOG-OFFLINE.en.md).

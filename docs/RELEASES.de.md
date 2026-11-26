@@ -39,7 +39,7 @@ GitHub Secrets sind für die signierende Workflow-Ausführung gedacht. Der priva
 
 ## Release nach Versionswechsel: automatisch
 
-Nach der einmaligen Einrichtung der vier Secrets benötigt der reguläre Release **keinen persönlichen GitHub-Token und keine Linux-VM**. Wird auf Branch `main` die Versionsnummer in `package.json` von beispielsweise `0.1.0-alpha.29` auf `0.1.0-alpha.30` erhöht, prüft GitHub Actions den Versionswechsel und baut automatisch die signierte APK mit SHA256. Erst nach erfolgreichem Build, Tests und Signaturprüfung erzeugt der Workflow das passende Versionstag und veröffentlicht den Prerelease unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
+Nach der einmaligen Einrichtung der vier Secrets benötigt der reguläre Release **keinen persönlichen GitHub-Token und keine Linux-VM**. Wird auf Branch `main` die Versionsnummer in `package.json` von beispielsweise `0.1.0-alpha.N` auf `0.1.0-alpha.(N+1)` erhöht, prüft GitHub Actions den Versionswechsel und baut automatisch die signierte APK mit SHA256. Erst nach erfolgreichem Build, Tests und Signaturprüfung erzeugt der Workflow das passende Versionstag und veröffentlicht den Prerelease unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
 
 Quellcode-/Dokumentationsänderungen ohne neue Versionsnummer erzeugen dagegen nur Debug-Test-APKs, **keinen neuen Release**.
 
@@ -59,3 +59,7 @@ Die bisher auf der Linux-VM erstellten `*-debug.apk` können mit einem anderen Z
 **Vor einem Signaturwechsel:** JSON-Vollsicherung extern aufbewahren; separate Wiederherstellbarkeit prüfen. Nicht deinstallieren, bevor die Daten und der Migrationsweg gesichert sind. Für nahtlose Updates müsste derselbe ursprüngliche Signaturschlüssel genutzt werden – Debug-Schlüssel dauerhaft für öffentliche Releases zu verwenden ist aus Sicherheitsgründen nicht empfehlenswert.
 
 Die APK ist ein Alpha-Release; auch ein grüner GitHub-Build ersetzt keinen Funktionstest auf einem echten Android-Gerät.
+
+## Dokumentationsbereinigung ohne Release
+
+Die Branches `main` und `developer` werden unabhängig gepflegt. Ein Commit, der nur README, Changelogs, Installationshinweise oder `docs/` bereinigt, darf `package.json` **nicht** erhöhen. Dann erstellt die CI lediglich eine Debug-Test-APK. Die Übernahme neuer Funktionen von `developer` nach `main` ist eine separate, bewusst freizugebende Release-Entscheidung.

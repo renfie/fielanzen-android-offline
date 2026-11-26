@@ -3,6 +3,7 @@
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
 ## 0.1.0-alpha.37 (26.11.2026) – Kontostandsabgleich direkt in Android (main)
+- **Dokumentationsbereinigung:** Nicht mehr benötigte Alpha-Testpläne, alte Mobile-API-Übergaben und überholte Planungsdokumente aus `docs/` entfernt. READMEs, Entwicklungs-, Installations-, Sicherheits- und Release-Hinweise auf aktuellen Stand gebracht, ohne neue Version oder App-Datenänderung.
 - Die vorhandene Kontostandsabgleich-Maske steht nun ohne Web-Weiterleitung auch im Dashboard-Servermodus zur Verfügung. Lokale Finanzdaten und deren Abgleichroutine bleiben unverändert.
 - Voraussetzung: `features.account_reconciliation === true`, authentifizierte Schreibberechtigung und `finance_mode=web`. Nur aktive Konten mit gültigem Ist-Saldo auswählbar.
 - Eingabe und Vorschau für signierte Ist-Kontostände mit 0–3 Nachkommastellen. Der Server berechnet und bucht die Differenz über den eigenen geschützten Endpunkt.

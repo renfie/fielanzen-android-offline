@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Lizenziert unter [GNU GPL v2 ausschließlich](LICENSE).
 
-**Aktueller Quellstand (`main` und `developer`):** `0.1.0-alpha.37` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
+**Quellstand dieses Branches:** `0.1.0-alpha.37` · **Entwicklungsstand:** Alpha · **Android-Paketkennung:** `de.fielanzen.offline`
 
 FieLanzen Offline ist eine eigenständige Android-App auf Basis von **TypeScript, Capacitor und SQLite**. Konten, Empfänger, Kategorien, Buchungen, Umbuchungen, Wiederholungsregeln und Auswertungen funktionieren ohne Server. Ein optionaler, ausdrücklich aktivierter Servermodus nutzt die Mobile-API des getrennt entwickelten [FieLanzen/Financisto-Dashboards](https://github.com/renfie/financisto-dashboard). Die Datenquellen werden **nicht automatisch zusammengeführt oder synchronisiert**.
 
@@ -68,7 +68,9 @@ Die gezielten Quellcodeprüfungen ersetzen weder den vollständigen Android-Buil
 - [Entwicklung](docs/ENTWICKLUNG.md) · [English](docs/DEVELOPMENT.en.md)
 - [Sicherheit und Datenschutz](docs/SICHERHEIT.md) · [English](docs/SECURITY.en.md)
 - [Änderungsverlauf (DE)](CHANGELOG-OFFLINE.md) · [Change log (EN)](CHANGELOG-OFFLINE.en.md)
-- [Hinweise zur Dashboard-Mobile-API](docs/DASHBOARD-MOBILE-API.md)
+- [Aktuelle Mobile-API-Dokumentation des Finanzdashboards](https://github.com/renfie/financisto-dashboard/tree/develop/package/docs)
+- [Installation](docs/INSTALLATION.de.md) · [English](docs/INSTALLATION.en.md)
+- [Signierte Releases](docs/RELEASES.de.md) · [English](docs/RELEASES.en.md)
 
 ## Datenschutz, Lizenz und Herkunft
 
@@ -88,40 +90,12 @@ Jede Änderung auf `main` **ohne neue Version** erzeugt eine **Debug-Test-APK**.
 
 **Statusleisten-Schutz:** Android verwendet nur noch einen nativen WindowInsets-Mechanismus für Statusleiste, Kameraaussparung, untere Systemnavigation und Tastatur (keine konkurrierenden Capacitor-/CSS-Abstände). In Web/PWA bleibt der CSS-Safe-Area-Fallback. Ein echter Gerätetest steht noch aus.
 
-## Alpha 37 auf main (26.11.2026)
+## Aktueller Funktionsstand: Alpha 37
 
-`main` enthält jetzt Alpha 32–37 mit einheitlichen Buchungskarten für beide Datenquellen, Suchvorschlägen, wiederkehrenden Serverregeln, vollständigen Monats- und Historienberichten, SVG-Diagrammen und direktem Kontostandsabgleich im Servermodus. Lokale und Serverdaten bleiben getrennt; Finanzdaten und Sicherungsformat werden nicht migriert. **Gerätetest und Signaturkompatibilität vor Installation prüfen.** Ein signiertes Update ist nach erfolgreichem GitHub-Release-Workflow unter [Releases](https://github.com/renfie/fielanzen-android-offline/releases) erhältlich.
+- **Gleiche Android-Oberfläche:** Übersicht und Buchungen sind lokal wie im Servermodus einheitlich gestaltet. Lokale SQLite-Daten und Serverdaten bleiben vollständig getrennt.
+- **Historie:** Monatsvergleich, Filter, SVG-Balken und Kategorien-Kreisdiagramme. Im Servermodus stammen vollständige Monate aus `GET /api/mobile/v1/reports/monthly` bei aktivierter `monthly_reports`-Capability; unvollständige Buchungsseiten gelten nicht als vollständiger Monatsbericht.
+- **Wiederkehrende Regeln:** Der Servermodus verwaltet die Dashboard-Regeln nur bei `recurring_rules: true` und passenden API-Rechten; lokale Regeln werden nicht übernommen.
+- **Kontostandsabgleich:** Direkt in Android, wenn `account_reconciliation: true`, ein Write-Key und `finance_mode=web` vorliegen. Die API schreibt die Korrekturbuchung; unsichere Netzwerkantworten erfordern die ausdrückliche Wiederholung mit identischem Auftrag und identischer UUID.
+- **Empfänger/Kategorien:** Tastaturfreundliche Vorschläge. Serverseitige Buchungssuche umfasst nur geladene Buchungsseiten; ältere Seiten können ausdrücklich nachgeladen werden.
 
-## Einheitliche Oberfläche für lokale und Serverdaten
-
-Übersicht und Buchungen verwenden künftig dieselben Karten, Farben, Abstände, Einklapp- und Filterelemente. Der Servermodus bezieht Kontostände und Buchungen weiterhin **ausschließlich** aus der Dashboard-Mobile-API; die lokale SQLite-Datenbank wird weder angezeigt noch mit Serverdaten vermischt. Einzelbuchungssuchen arbeiten weiterhin mit paginierten API-Seiten. Vollständige Monats- und Historienwerte kommen bei verfügbarer Capability hingegen direkt aus der serverseitigen Auswertung; fehlende Daten werden nicht als vollständig angezeigt. Serverseitige wiederkehrende Regeln werden nur über die entsprechende Dashboard-Mobile-API verwaltet und niemals durch lokale Regeln ersetzt. `developer` erzeugt Test-APKs; neue Versionen auf `main` stoßen signierte Prereleases an.
-
-## Wiederkehrende Serverregeln – API-Vorbereitung (developer)
-
-Die Android-Serveransicht ist für die geplante Dashboard-Mobile-API zur Verwaltung wiederkehrender Regeln vorbereitet (Anlegen, Bearbeiten, Pausiert/Manuell/Automatisch, Fälliges bestätigen, Archivieren). **Aktuell bietet das Dashboard diese Endpunkte noch nicht an.** Erst wenn dessen `/api/mobile/v1/capabilities` die Funktion `features.recurring_rules: true` meldet, lädt Android die Serverregeln und schaltet bei bestehenden Schreibrechten die Bedienung frei. Lokale Regeln bleiben vollständig getrennt. Automatische Buchungen werden ausschließlich vom Dashboard ausgeführt und nur von Administratoren freigeschaltet. Bei nicht bestätigtem Schreibzugriff bleibt der Android-Keystore-Auftrag mit demselben Idempotency-Key erhalten. [API-Vertrag und Handlungsanweisung für Finanzdashboard 6](docs/MOBILE-RECURRING-RULES-API.md).
-
-## Tastaturfreundliche Auswahl bei Empfängern und Kategorien (Alpha 33, developer)
-
-Buchungen und wiederkehrende Regeln nutzen lokal wie im Servermodus eine kompakte Vorschlagsliste, die sich am tatsächlich sichtbaren Android-Bildschirmbereich ausrichtet. Häufige Namen und passende Wortanfänge werden bevorzugt; weitere Treffer sind scrollbar. Neue Empfänger lassen sich weiterhin frei eingeben, Kategorien bleiben an ihre bisherige Auswahl- und lokale Neuanlagelogik gebunden. Dashboard-API, Finanzdaten und Backups werden nicht geändert. Der echte Gerätetest steht noch aus.
-
-## Monatsvergleich und korrekter Serververlauf (Alpha 34, developer)
-
-Auf den Startseiten beider Modi lassen sich nun zwei Vergleichsmonate, Währung, Konto und Kategorie auswählen. Einnahmen/Ausgaben erscheinen zusätzlich als kompakte Grafik. Im Servermodus sind die Kontostände nach Status geordnet; der Kontostandsabgleich öffnet das Dashboard, da die Mobile-API noch keinen abgesicherten Endpunkt für diesen Schreibvorgang bietet. Im Reiter „Monat“ werden nicht geladene Monate nicht mehr als sichere Nullwerte mit vollen Balken dargestellt. Teilwerte sind ausdrücklich vorläufig; über eine Schaltfläche können jeweils bis zu drei weitere Buchungsseiten geladen werden. Für vollständige historische Vergleiche ohne umfangreiches Nachladen wäre eine eigene serverseitige Summen-API nötig. Gerätetest steht aus.
-
-## Historische Auswertung (Alpha 35, developer)
-
-Der bisherige Reiter **„Monat“** heißt nun **„Historie“** und bildet die mobile Historienansicht des Finanzdashboards nach: einstellbarer Zeitraum von 2 bis 36 Monaten, Währung, Konto und Kategorie, Summen, Monatsdurchschnitt, getrennte Balkendiagramme sowie Kreisdiagramme für Einnahmen und Ausgaben nach Kategorien.
-
-Beide Datenquellen nutzen dieselbe Android-Ansicht. **Lokal** berechnet die App alle Werte aus ihrer eigenen SQLite-Datenbank (ohne zukünftige Buchungen). **Im Servermodus** werden vollständige Monatsbeträge ausschließlich über den authentifizierten Endpunkt `/api/mobile/v1/reports/monthly` bezogen, sofern `features.monthly_reports: true` gemeldet wird. Bei fehlender Funktion, unvollständiger API-Antwort oder Netzwerkfehlern zeigt die App keine aus einzelnen geladenen Buchungen hochgerechneten Monatszahlen. Höchste Einzelbuchungen benötigen noch die optionale `highlights`-Ergänzung der Dashboard-API; bis dahin weist die Ansicht auf deren Fehlen hin.
-
-Die Änderungen sind mit Alpha 37 auch in `main` enthalten. Keine Migration lokaler Finanzdaten und keine Änderung des Backupformats. Der Test auf einem Android-Gerät steht aus.
-
-## Diagrammdarstellung in Android WebView (Alpha 36, developer)
-
-Die Kreissegmente der Historie und die Monatsbalken werden jetzt als native SVG-Elemente mit Präsentationsattributen erzeugt, statt gesperrter dynamischer Inline-CSS-Eigenschaften. Die restriktive `style-src self`-Sicherheitsrichtlinie bleibt unverändert. Farbliche Legenden und Abstände der Kategorienliste wurden für Smartphones überarbeitet. Lokale und Server-Historie verwenden dieselbe Grafikkomponente. Keine Änderungen an Finanzdaten, Datenbankschema, Sicherung oder Schreib-API. Anzeigeprüfung auf einem echten Android-Gerät steht aus.
-
-## Kontostandsabgleich direkt im Servermodus (Alpha 37)
-
-Unter **Übersicht → Kontostände → Kontostand abgleichen** öffnet sich auch im Servermodus die bekannte Abgleichmaske: Konto, heutiger Ist-Saldo, Prognose inkl. künftiger Buchungen, Eingabe des tatsächlichen Kontostands, Vorschau-Differenz und Notiz. Es erfolgt keine Weiterleitung. Freigabe nur bei `account_reconciliation: true`, gültigem Write-Key, berechtigter Rolle und `finance_mode=web`. Die verbindliche Differenz wird ausschließlich vom Server gebucht, niemals in der lokalen SQLite-Datenbank. Negative Salden sowie Währungen mit null bis drei Nachkommastellen sind berücksichtigt.
-
-Der POST wird vor dem Senden mit Konto, Body und UUID verschlüsselt als offener Auftrag gespeichert. Bei Timeout oder Verbindungsabbruch kann **nur derselbe Request mit derselben UUID** manuell erneut gesendet werden. Bei HTTP 409 werden frische Kontostände angezeigt und eine erneute bewusste Bestätigung verlangt; kein automatisches Überschreiben. Nach HTTP 200 werden Konten, Buchungen und die angezeigten Monatswerte neu geladen. Die lokale Abgleichfunktion und Sicherungsformate bleiben unverändert. Praxistest auf Android steht aus.
+**Teststand:** Alpha 37 wurde in GitHub Actions automatisiert geprüft und als APK gebaut. Gerätetests bleiben gesondert erforderlich. Die aktuellen Schnittstellenverträge liegen im [Finanzdashboard](https://github.com/renfie/financisto-dashboard/tree/develop/package/docs), Änderungen seit früheren Alphas in den [Changelogs](CHANGELOG-OFFLINE.md).

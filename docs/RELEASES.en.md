@@ -31,7 +31,7 @@ Provide the requested passwords interactively. Under **Repository Settings → S
 
 ## Automatic signed releases on version bumps
 
-Once the four secrets are configured, **no personal access token or Linux VM is needed for routine releases**. Increasing the application version in `package.json` on `main` (for example from Alpha 29 to Alpha 30) automatically triggers the Android signed-release build. After all tests and signature verification succeed, the workflow creates the matching Git tag and publishes the APK and SHA256 checksum under [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
+Once the four secrets are configured, **no personal access token or Linux VM is needed for routine releases**. Increasing the application version in `package.json` on `main` (for example from one alpha version to its next version) automatically triggers the Android signed-release build. After all tests and signature verification succeed, the workflow creates the matching Git tag and publishes the APK and SHA256 checksum under [Releases](https://github.com/renfie/fielanzen-android-offline/releases).
 
 Ordinary source and documentation commits **without** a version increase produce a debug test artifact only, not a new release.
 
@@ -47,3 +47,7 @@ For later versions, update `package.json`, app source and version-specific tests
 ## Existing installs
 
 The signing identity must match for Android to update in place. APKs previously built with a different debug key **cannot** be updated directly with the new release key. Uninstalling can erase private finance data. Back up and verify recovery **before** attempting any key migration. Do not publish releases signed with an easily shared debug key. These are alpha builds and require device testing.
+
+## Documentation-only maintenance
+
+The `main` and `developer` branches are maintained independently. Cleaning README, changelogs, installation guides or `docs/` must not increase `package.json`'s version. Such a main push only builds a debug-test artifact. Promoting developer features into main is a distinct, explicit release decision.

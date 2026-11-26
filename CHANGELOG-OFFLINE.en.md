@@ -3,6 +3,7 @@
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
 ## 0.1.0-alpha.37 (2026-11-26) – Native Dashboard account reconciliation (main)
+- **Documentation cleanup:** Removed obsolete milestone checklists, historical Mobile API handoffs, and superseded planning files from `docs/`. Refreshed README, development, installation, security and release guidance without changing the app version or finance data.
 - Use the existing local-style balance reconciliation form inside Android server mode; remove the link to the web Dashboard. Local SQLite finances and the offline reconciliation routine remain unchanged.
 - Require `account_reconciliation: true` together with an authorized write-enabled web-finance session; only eligible active accounts can be selected.
 - Signed current and actual balances support 0–3 decimal places. The client previews the delta; the server alone calculates and persists the adjustment.
