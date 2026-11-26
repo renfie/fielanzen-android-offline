@@ -1030,7 +1030,7 @@ async function loadMoreRemoteHistory():Promise<void>{
     const client=await connectedServerClient();
     // Only three additional API pages per explicit tap, never a silent full-ledger download.
     for(let i=0;i<3&&remote.nextBefore;i++){
-      const before=remote.nextBefore;
+      const before:string=remote.nextBefore!;
       const page=await client.bookings(before);
       if(page.nextBefore===before)throw new Error('Wiederholter API-Seitenzeiger.');
       const seen=new Set(remote.bookings.map(b=>b.id));

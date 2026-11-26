@@ -20,7 +20,7 @@ const monthName=(value:string)=>new Date(value+'-15T12:00:00').toLocaleDateStrin
 export function calendarMonth(value:string,change:number):string {
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(value)||!Number.isInteger(change)||Math.abs(change)>120)
     throw new Error('Ungültiger Vergleichsmonat.');
-  const [y,m]=value.split('-').map(Number);
+  const [y=2026,m=1]=value.split('-').map(Number);
   const d=new Date(y,m-1+change,15);
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
 }
