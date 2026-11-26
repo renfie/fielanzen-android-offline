@@ -2019,10 +2019,14 @@ async function click(action: string, id?: number): Promise<void> {
         catch{/* pending and error displayed */}return;
       }
       case 'server-retry-pending':{
-        try{if(!remote.pending)throw new Error('Kein offener Schreibauftrag.');
+        try{
+          if(!remote.pending)throw new Error('Kein offener Schreibauftrag.');
+          if(remote.pending.method==='DELETE'&&!window.confirm(
+            'Löschauftrag '+remote.pending.path+': Bitte zuerst im Dashboard prüfen, ob der Datensatz noch existiert. '+
+            'Soll der exakt gespeicherte Auftrag mit derselben UUID ausdrücklich erneut gesendet werden?'))return;
           if(isReconciliationPending(remote.pending))await issueServerReconciliation(remote.pending,true);
-          else await issueServerWrite(remote.pending,true);}
-        catch{/* message visible */}return;
+          else await issueServerWrite(remote.pending,true);
+        }catch{/* message visible */}return;
       }
       case 'server-discard-pending':{
         if(!remote.pending)return;

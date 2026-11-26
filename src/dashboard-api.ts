@@ -15,6 +15,7 @@ import {isClientCertificateChallenge} from './dashboard-connection.js';
 import {DashboardApiError,parseAccounts,parseCategories,parsePayees,parseBookings,parseSession,parseCapabilities} from './dashboard-protocol.js';
 import {recurringCapability,parseServerRecurringRules} from './server-recurring.js';
 import {reconciliationCapability} from './server-reconciliation.js';
+import {mobileWriteBody,mobileErrorDetail} from './server-write-payload.js';
 import {buildMonthlyPath,monthlyReportsCapability,parseMonthlyReport,type MonthQuery,type MonthlyReport} from './monthly-api.js';
 import type {ServerRecurringRule} from './server-recurring.js';
 import type {RemoteAccount,RemoteCategory,RemotePayee,RemotePage,RemoteDraft,RemoteBooking,DashboardSession,PendingWrite} from './dashboard-protocol.js';
@@ -63,7 +64,10 @@ export async function apiCall(base:string,path:string,method:'GET'|'POST'|'PUT'|
   if(result.status===401||result.status===403)throw new DashboardApiError(result.status,'denied','Zugriff verweigert oder API-Schlüssel widerrufen. Keine Daten geändert.');
   if(result.status===409||result.status===412)throw new DashboardApiError(result.status,'conflict','Versions-/Buchungskonflikt. Serverdaten neu laden; keine automatische Überschreibung.');
   if(result.status===428)throw new DashboardApiError(result.status,'precondition','Änderung ohne gültige Revision abgewiesen.');
-  if(result.status<200||result.status>=300)throw new DashboardApiError(result.status,'http',`Dashboard antwortet mit HTTP ${result.status}. ${result.status===400?'Die Anfrage wurde vom Server abgewiesen. ':''}Kein automatischer Wiederholungsversuch.`);
+  if(result.status<200||result.status>=300){
+    const detail=mobileErrorDetail(result.data);
+    throw new DashboardApiError(result.status,'http',`Dashboard antwortet mit HTTP ${result.status}. ${detail??'Die Anfrage wurde vom Server abgewiesen.'} Kein automatischer Wiederholungsversuch.`);
+  }
   return asData(result.data);
 }
 export async function probeDashboard(input:string):Promise<DashboardProbe>{
@@ -108,9 +112,10 @@ export class DashboardClient {
     if(p.method!=='POST'&& !p.ifMatch)throw new Error('If-Match-Revisionsnummer fehlt.');
     const headers:Record<string,string>={'Idempotency-Key':p.idempotencyKey};
     if(p.method!=='POST')headers['If-Match']=p.ifMatch!;
-    if(p.data!==null&&(typeof p.data!=='object'||Array.isArray(p.data)))
-      throw new Error('Ungültiges JSON im gespeicherten Schreibauftrag.');
-    return apiCall(this.base,p.path,p.method,this.token,p.data as object|null,headers);
+    // Booking DELETE requires an empty JSON object. Also normalizes legacy
+    // encrypted pending requests that were saved with data:null on 0.2.0.
+    const payload=mobileWriteBody(p);
+    return apiCall(this.base,p.path,p.method,this.token,payload,headers);
   }
 }
 export function createPendingWrite(server:string,method:'POST'|'PUT'|'DELETE',id:number|null,data:RemoteDraft|null,revision?:string):PendingWrite{

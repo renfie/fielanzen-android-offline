@@ -302,7 +302,7 @@ export function serverPageHtml(data:ServerViewData,screen:'home'|'bookings'|'rec
     <p class="warning">${isPendingReconciliation?
       'Der letzte Kontostandsabgleich wurde nicht eindeutig bestätigt. Neue Schreibvorgänge sind gesperrt. Bitte denselben Auftrag mit derselben UUID erneut prüfen oder senden.':
       'Ein früherer Schreibversuch wurde nicht eindeutig bestätigt. Neue Schreibvorgänge sind gesperrt. Bitte zuerst den Server prüfen.'}</p>
-    <p class="muted small">${esc(data.pending.method)} · ${esc(data.pending.createdAt)} · Idempotency-Key: ${esc(data.pending.idempotencyKey)}</p>
+    <p class="muted small">${esc(data.pending.method)} · Ziel: ${esc(data.pending.path)} · ${esc(data.pending.createdAt)} · Idempotency-Key: ${esc(data.pending.idempotencyKey)}</p>
     <div class="btn-row"><button class="btn secondary" data-action="server-reload">Serverdaten laden</button>
       <button class="btn secondary" data-action="server-retry-pending">${isPendingReconciliation?'Denselben Abgleich erneut senden':'Denselben Auftrag erneut prüfen/senden'}</button>
       <button class="btn danger" data-action="server-discard-pending">Nach Kontrolle freigeben</button></div></section>`:'';

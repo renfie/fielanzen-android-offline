@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## Unreleased (developer) – Mobile API DELETE request handling
+- Booking DELETE requests always send a valid empty JSON object when encrypted legacy pending data was null, matching the Dashboard Flask API. The original UUID, revision, request target and stored pending intent remain unchanged.
+- Deletion of recurring server rules preserves its mandatory `confirm_title` payload.
+- Display detailed safe server error reasons and the exact target endpoint for a pending operation.
+- Require explicit verification and confirmation before re-sending a stored DELETE with the same idempotency key. Never silently retry a write with unknown outcome.
+- Developer-only test fix on top of 0.2.0; no main release or APK signing.
+
 ## 0.2.0 (2026-11-26) – First regular Android release
 - Consolidate alphas 32–37 into regular version 0.2.0: unified UI, month comparisons, SVG history, server recurring rules and native balance reconciliation.
 - Signed APK is published **without the prerelease flag**, with detailed bilingual [release notes](docs/releases/v0.2.0.md), SHA256 checksum and tagged source.
