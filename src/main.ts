@@ -1479,6 +1479,7 @@ async function click(action: string, id?: number): Promise<void> {
   if(serverMode){
     const allowed=new Set(['go-home','go-bookings','go-settings','go-recurring','go-reports',
       'server-reload','server-more-bookings','server-add-booking','server-edit-booking','server-delete-booking',
+      'toggle-server-booking','server-reset-filters','server-previous-report-month','server-next-report-month','print-report',
       'server-switch-local','server-save-default','server-forget-token','server-retry-pending','server-discard-pending']);
     if(!allowed.has(action)){remote.error='Lokale Funktionen sind im Servermodus gesperrt. Zuerst zu Lokal wechseln.';render();return;}
     switch(action){
