@@ -1,4 +1,4 @@
-FieLanzen Offline 0.1.0-alpha.29 – Android-APK auf Debian/Ubuntu x86_64 bauen
+FieLanzen Offline – Android-APK auf Debian/Ubuntu x86_64 bauen
 
 1. Auf dem bisherigen Handy zuerst unter "Mehr -> Datensicherung" eine vollständige JSON-Sicherung außerhalb der App erstellen.
 2. Projektarchiv auf derselben Build-VM entpacken (oder dieses Git-Repository klonen).
@@ -6,7 +6,7 @@ FieLanzen Offline 0.1.0-alpha.29 – Android-APK auf Debian/Ubuntu x86_64 bauen
 
     bash scripts/build-android-vm.sh
 
-4. Ergebnis: release/FieLanzen-Offline-0.1.0-alpha.29-debug.apk
+4. Ergebnis: release/FieLanzen-Offline-<version-aus-package.json>-debug.apk
 5. APK über die vorhandene App installieren. WICHTIG: Nicht deinstallieren oder App-Daten löschen!
 
 Paketkennung: de.fielanzen.offline

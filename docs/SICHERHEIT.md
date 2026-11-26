@@ -8,4 +8,4 @@
 - Für echte GitHub-Veröffentlichungen Beispiel-URLs verwenden und Demo-Daten von echten Finanzdaten trennen.
 - JSON- und Financisto-Sicherungen sind nicht automatisch verschlüsselt. Das Aktivieren der Android-App-Sperre verschlüsselt solche exportierten Dateien nicht.
 - Bei API-Kommunikation Schlüssel möglichst über den Android Keystore sichern. Keine Schlüssel in Crashlogs oder Fehlermeldungen veröffentlichen.
-- Das Repository sollte bis zum erfolgreichen Audit zunächst privat bleiben.
+- Das Repository ist öffentlich einsehbar. Vor jedem Push Quelltext, neue Dateien und Commit-Historie auf private Daten kontrollieren; `.gitignore` schützt bereits eingecheckte Daten nicht.
