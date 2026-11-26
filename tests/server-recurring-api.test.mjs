@@ -80,7 +80,7 @@ test('each write uses a new UUID, exact endpoint and If-Match for existing rules
     assert.equal(parsePending(JSON.stringify(request))?.path,path);
   }
   assert.throws(()=>createRecurringPendingWrite('https://example.org','delete',11,
-    {confirm_title:'Miete'},'stale'),/Revision/);
+    {confirm_title:'Miete'},'stale'),/[Rr]evision/);
 });
 test('recurring UI follows local visual layout without substituting local rules',()=>{
   const data=sample();

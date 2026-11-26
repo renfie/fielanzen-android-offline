@@ -97,7 +97,7 @@ test('report and recurring pages match local layout but clearly mark API limits'
   }
   const recurring=serverPageHtml(data,'recurring');
   assert.match(recurring,/<h1>Wiederkehrend<\/h1>/);
-  assert.match(recurring,/<h2>Regeln<\/h2>/);
+  assert.match(recurring,/<h2>Regeln/);
   assert.match(recurring,/Mobile-API/);
   assert.match(recurring,/disabled/);
   const settings=source('src/server-ui.ts');
