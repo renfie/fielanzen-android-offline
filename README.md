@@ -10,7 +10,7 @@
 
 **Copyright © 2026 René Fieler (RenFie)** · Licensed under [GNU GPL v2 only](LICENSE).
 
-**Current source version (`developer`):** `0.1.0-alpha.32` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
+**Current source version (`developer`):** `0.1.0-alpha.33` · **Development status:** alpha · **Android package ID:** `de.fielanzen.offline`
 
 FieLanzen Offline is a separate Android application built with **TypeScript, Capacitor and SQLite**. Accounts, payees, categories, bookings, transfers, recurring rules and reports can be managed on the phone without a server. A separately enabled server mode connects to the [FieLanzen/Financisto Dashboard](https://github.com/renfie/financisto-dashboard) through its Mobile API. The two data sources are **not silently merged or synchronized**.
 
@@ -39,7 +39,7 @@ Use Node.js 22+, Java 21 and an Android SDK, or let the VM script install missin
 bash scripts/build-android-vm.sh
 ```
 
-Expected output: `release/FieLanzen-Offline-0.1.0-alpha.32-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
+Expected output: `release/FieLanzen-Offline-0.1.0-alpha.33-debug.apk` (after a successful build). The script does not publish anything to GitHub or update the dashboard.
 
 **Important:** Make an external JSON backup before updating an installed app. Android updates require the **same signing key** and package ID. Do not uninstall the app or clear its data to work around a signature mismatch. See [German VM instructions](ANLEITUNG-ANDROID-DEBIAN.txt) and [installation guide](docs/INSTALLATION.en.md).
 
@@ -95,3 +95,7 @@ The overview and booking screens now use the **same booking-card renderer, spaci
 ## Server recurring rules – API-ready Android preview (developer)
 
 The Android server mode is prepared for the planned Dashboard Mobile API to create/edit rules, select Paused/Manual/Automatic modes, explicitly confirm due manual postings and archive rules. **These API endpoints do not exist in the Dashboard yet.** Android enables this interface only after `/api/mobile/v1/capabilities` advertises `features.recurring_rules: true`; read/write permissions and admin-only automatic activation are enforced. Local rules remain separate, and the Dashboard alone schedules server postings. Uncertain writes remain secured in Android Keystore with their original idempotency key. [Backend implementation contract](docs/MOBILE-RECURRING-RULES-API.md).
+
+## Keyboard-aware payee and category suggestions (alpha.33, developer)
+
+Booking and recurring-rule forms in both modes now use a bounded floating suggestion list positioned against the Android visual viewport instead of a large fixed dropdown. Recently used items and prefix matches come first. New payee names remain free text; categories retain their existing explicit-selection and local creation rules. The server API, local data, and backups are unchanged. Real-device verification is pending.

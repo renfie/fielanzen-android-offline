@@ -14,6 +14,12 @@ export function filterManagedCategories(categories:Category[],search:string,kind
 export function categorySuggestions(categories:Category[],kind:CategoryKind,search:string,usage:ReadonlyMap<number,number>,limit=8):Category[]{
   const q=norm(search);
   return categories.filter(c=>c.kind===kind&&norm(c.name).includes(q))
-    .sort((a,b)=>(usage.get(b.id)??0)-(usage.get(a.id)??0)||a.name.localeCompare(b.name,'de'))
+    .sort((a,b)=>{
+      if(q){
+        const aPrefix=norm(a.name).startsWith(q),bPrefix=norm(b.name).startsWith(q);
+        if(aPrefix!==bPrefix)return aPrefix?-1:1;
+      }
+      return (usage.get(b.id)??0)-(usage.get(a.id)??0)||a.name.localeCompare(b.name,'de');
+    })
     .slice(0,Math.max(0,limit));
 }

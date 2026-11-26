@@ -2,6 +2,13 @@
 
 [English](CHANGELOG-OFFLINE.en.md) | **Deutsch**
 
+## 0.1.0-alpha.33 (26.11.2026) – Tastaturfreundliche Empfänger- und Kategorieauswahl (developer)
+- Einheitliche, kompakte Suchvorschläge beim Anlegen und Bearbeiten von **lokalen Buchungen und Regeln** sowie **Serverbuchungen und Serverregeln**.
+- Vorschlagslisten werden wie in der mobilen Dashboard-Webansicht anhand des sichtbaren Bildschirmbereichs inklusive Android-Bildschirmtastatur oberhalb oder unterhalb des Eingabefelds positioniert. Maximal etwa vier Treffer gleichzeitig sichtbar, weitere per Scrollen.
+- Beim Öffnen werden häufig verwendete Empfänger und Kategorien bevorzugt; die Suche berücksichtigt Wortanfänge, Groß-/Kleinschreibung und Akzentzeichen. Ausgewählte Werte lassen sich durch einfaches Weitertippen ersetzen.
+- Neue Empfängernamen bleiben als Freitext möglich. Kategorien müssen weiterhin explizit ausgewählt werden; lokale neue Kategorien können wie bisher angelegt werden. Die bestehende Trennung lokaler und serverbasierter Finanzdaten bleibt erhalten.
+- Kein Dashboard-Update und keine Änderung von Datenbanken, Backups oder Schreib-APIs. Ausschließlich Debug-Testbuild auf `developer`; Android-Geräteprüfung steht aus.
+
 ## 0.1.0-alpha.32 (26.11.2026) – Einheitliche Oberfläche und Vorbereitung wiederkehrender Serverregeln (developer)
 - **Einheitliche Oberfläche:** Lokale und serverbasierte Buchungen verwenden gemeinsame Buchungskarten mit gleichen Farben, Statussymbolen, Abständen, einklappbaren Details und Schaltflächengrößen.
 - **Serverübersicht:** Gleiche Struktur wie lokal mit Kontoständen, Monatsbereich, Buchungssuche sowie Filter- und Sortiermöglichkeiten. Auswertungen auf Grundlage nur geladener API-Seiten werden als möglicherweise unvollständig gekennzeichnet.

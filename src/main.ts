@@ -19,6 +19,7 @@ import type {Booking, BookingInput, BookingType, CategoryKind, Snapshot,ImportRe
 import {accountBalance, checkBooking, defaultAutoBackup, emptySnapshot, formatEuro, parseEuro, parseSignedEuro} from './types.js';
 import {bookingTotals,calculateBalances,exportBookingsCsv,inspectSnapshot,inventoryAsText,lastPayeeUsage,monthOffset,monthlyTrend} from './analysis.js';
 import {categorySuggestions, filterManagedCategories} from './category-ui.js';
+import {attachDialogSuggestions,rankSuggestions,suggestionKey} from './suggestion-ui.js';
 import {planAccountReconciliation} from './reconcile.js';
 import {normalizeDashboardUrl,probeDashboard,DashboardClient,createPendingWrite} from './dashboard-api.js';
 import type {RemoteAccount,RemoteCategory,RemotePayee,RemoteBooking,RemoteDraft,PendingWrite} from './dashboard-api.js';
@@ -37,7 +38,7 @@ import gplText from '../LICENSE?raw';
 import noticeDe from '../NOTICE.md?raw';
 import noticeEn from '../NOTICE.en.md?raw';
 
-export const APP_VERSION='0.1.0-alpha.32';
+export const APP_VERSION='0.1.0-alpha.33';
 document.documentElement.classList.toggle('native-android',runningNatively());
 const app = document.querySelector<HTMLDivElement>('#app')!;
 let storage: Awaited<ReturnType<typeof openStorage>>;
@@ -547,23 +548,27 @@ function setupPayeePicker(dlg:HTMLDialogElement,prefix:'book'|'rule'):void {
   const payee=dlg.querySelector<HTMLInputElement>(`#${prefix}-payee`);
   const menu=dlg.querySelector<HTMLDivElement>(`#${prefix}-known-payees-menu`);
   if(!payee||!menu)return;
-  const lastUsed=lastPayeeUsage(state.bookings);
-  const recent=[...state.payees].sort((a,b)=>(lastUsed.get(b.id)??0)-(lastUsed.get(a.id)??0)||a.name.localeCompare(b.name,'de'));
-  const populate=()=>{
-    const needle=payee.value.trim().toLocaleLowerCase('de');
-    const matches=recent.filter(p=>p.name.toLocaleLowerCase('de').includes(needle)).slice(0,8);
+  const picker=attachDialogSuggestions(dlg,payee,menu);
+  const usage=lastPayeeUsage(state.bookings);
+  const populate=(showAll=false)=>{
+    const matches=rankSuggestions(state.payees,showAll?'':payee.value,8,usage);
     menu.innerHTML=matches.map(p=>`<button type="button" role="option" class="payee-suggestion" data-payee-id="${p.id}">${esc(p.name)}</button>`).join('');
-    menu.hidden=matches.length===0;
+    picker.open();
   };
-  payee.addEventListener('focus',populate);
-  payee.addEventListener('input',populate);
+  let modified=false;
+  payee.addEventListener('focus',()=>{modified=false;if(payee.value)payee.select();populate(true);});
+  payee.addEventListener('click',()=>{if(!modified&&payee.value)payee.select();populate(true);});
+  payee.addEventListener('input',()=>{modified=true;populate();});
+  payee.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&!menu.hidden){e.preventDefault();picker.close();}
+    if(e.key==='Enter'&&!menu.hidden){e.preventDefault();menu.querySelector<HTMLButtonElement>('[data-payee-id]')?.click();}
+  });
   menu.addEventListener('click',e=>{
     const button=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-payee-id]');
     if(!button)return;
     const p=state.payees.find(x=>x.id===Number(button.dataset.payeeId));
-    if(p){payee.value=p.name;menu.hidden=true;payee.focus();}
+    if(p){payee.value=p.name;modified=false;picker.close();payee.focus({preventScroll:true});}
   });
-  dlg.addEventListener('click',e=>{if(!(e.target as HTMLElement).closest('.payee-picker'))menu.hidden=true;});
 }
 function setupCategoryPicker(dlg:HTMLDialogElement,prefix:'book'|'rule'):void {
   const input=dlg.querySelector<HTMLInputElement>(`#${prefix}-category-search`);
@@ -573,24 +578,26 @@ function setupCategoryPicker(dlg:HTMLDialogElement,prefix:'book'|'rule'):void {
   const kind=input.closest<HTMLElement>('[data-category-kind]')?.dataset.categoryKind as CategoryKind;
   const usage=new Map<number,number>();
   for(const b of state.bookings)if(b.categoryId!==null)usage.set(b.categoryId,(usage.get(b.categoryId)??0)+1);
+  const picker=attachDialogSuggestions(dlg,input,menu);
   let focusedIndex=-1;
-  const close=()=>{menu.hidden=true;input.setAttribute('aria-expanded','false');focusedIndex=-1;};
-  const populate=()=>{
+  const close=()=>{picker.close();focusedIndex=-1;};
+  const populate=(showAll=false)=>{
     const query=input.value.trim();
-    const suggestions=categorySuggestions(state.categories,kind,query,usage,8);
+    const suggestions=categorySuggestions(state.categories,kind,showAll?'':query,usage,8);
     const exact=state.categories.some(c=>c.kind===kind&&c.name.toLocaleLowerCase('de')===query.toLocaleLowerCase('de'));
     menu.innerHTML=suggestions.map(c=>`<button type="button" role="option" class="category-suggestion" data-category-id="${c.id}">${esc(c.name)}<small>${usage.get(c.id)??0} Buchungen</small></button>`).join('')+
       (query.length>0&&query.length<=100&&!exact?`<button type="button" class="category-suggestion category-create" data-category-create="1">+ Neue Kategorie „${esc(query)}“ anlegen</button>`:'');
-    menu.hidden=!menu.children.length;
-    input.setAttribute('aria-expanded',String(!menu.hidden));focusedIndex=-1;
+    picker.open();focusedIndex=-1;
   };
   const choose=(id:number)=>{
     const c=state.categories.find(x=>x.id===id&&x.kind===kind);
     if(!c)return;
     selected.value=String(c.id);input.value=c.name;input.focus();close();
   };
-  input.addEventListener('focus',populate);
-  input.addEventListener('input',()=>{selected.value='';populate();});
+  let modified=false;
+  input.addEventListener('focus',()=>{modified=false;if(selected.value&&input.value)input.select();populate(true);});
+  input.addEventListener('click',()=>{if(!modified&&selected.value&&input.value)input.select();populate(true);});
+  input.addEventListener('input',()=>{modified=true;selected.value='';populate();});
   input.addEventListener('keydown',e=>{
     if(e.key==='Escape'){if(!menu.hidden){e.stopPropagation();e.preventDefault();close();}return;}
     if(e.key==='ArrowDown'||e.key==='ArrowUp'){
@@ -1061,31 +1068,39 @@ function remotePicker(dlg:HTMLDialogElement, id:string, menuId:string, items:()=
   const field=dlg.querySelector<HTMLInputElement>('#'+id)!;
   const menu=dlg.querySelector<HTMLDivElement>('#'+menuId)!;
   const hidden=category?dlg.querySelector<HTMLInputElement>('#srv-category'):null;
-  const close=()=>{menu.hidden=true;field.setAttribute('aria-expanded','false');};
-  const renderMatches=()=>{
-    const q=field.value.trim().toLocaleLowerCase('de');
-    const filtered=items().filter(x=>x.name.toLocaleLowerCase('de').includes(q)).slice(0,7);
-    menu.innerHTML=filtered.map(x=>`<button type="button" class="category-suggestion" data-remote-choice="${x.id}">${esc(x.name)}</button>`).join('');
-    menu.hidden=!filtered.length;
-    field.setAttribute('aria-expanded',String(!menu.hidden));
-    if(filtered.length)requestAnimationFrame(()=>field.scrollIntoView({block:'center',behavior:'instant'}));
+  const picker=attachDialogSuggestions(dlg,field,menu);
+  const close=()=>picker.close();
+  // Suggest recently used values first, rather than an alphabetical list starting at A.
+  // Only remote API data are used; no local ledger is read in server mode.
+  const usage=new Map<number,number>();
+  const payeesByName=new Map(remote.payees.map(p=>[suggestionKey(p.name),p.id]));
+  for(const booking of remote.bookings){
+    const itemId=category?(booking.categoryId??0):(payeesByName.get(suggestionKey(booking.payeeTitle??''))??0);
+    if(itemId)usage.set(itemId,(usage.get(itemId)??0)+1);
+  }
+  const renderMatches=(showAll=false)=>{
+    const query=showAll?'':field.value;
+    const filtered=rankSuggestions(items(),query,7,usage);
+    menu.innerHTML=filtered.map(x=>`<button type="button" role="option" class="category-suggestion" data-remote-choice="${x.id}">${esc(x.name)}</button>`).join('');
+    picker.open();
   };
-  field.addEventListener('focus',renderMatches);
-  field.addEventListener('input',()=>{if(hidden)hidden.value='';renderMatches();});
+  let modified=false;
+  field.addEventListener('focus',()=>{modified=false;if(field.value)field.select();renderMatches(true);});
+  field.addEventListener('click',()=>{if(!modified&&field.value)field.select();renderMatches(true);});
+  field.addEventListener('input',()=>{modified=true;if(hidden)hidden.value='';renderMatches();});
   field.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){close();return;}
+    if(e.key==='Escape'&&!menu.hidden){e.preventDefault();close();return;}
     if(e.key==='Enter'&&!menu.hidden){
-      const first=menu.querySelector<HTMLButtonElement>('[data-remote-choice]');
-      if(first){e.preventDefault();first.click();}
+      e.preventDefault();
+      menu.querySelector<HTMLButtonElement>('[data-remote-choice]')?.click();
     }
   });
   menu.addEventListener('click',e=>{
     const btn=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-remote-choice]');
     if(!btn)return;
     const row=items().find(x=>x.id===Number(btn.dataset.remoteChoice));
-    if(row){field.value=row.name;if(hidden)hidden.value=String(row.id);close();field.blur();}
+    if(row){field.value=row.name;if(hidden)hidden.value=String(row.id);modified=false;close();field.focus({preventScroll:true});}
   });
-  dlg.addEventListener('click',e=>{if(!(e.target as HTMLElement).closest('.server-search-field'))close();});
 }
 function serverCreateDialog(booking?:RemoteBooking):void{
   if(!serverMode||!remote.session?.canWrite||remote.pending||serverWriteBusy){remote.error='Der Server erlaubt gerade keine neue Schreiboperation.';render();return;}

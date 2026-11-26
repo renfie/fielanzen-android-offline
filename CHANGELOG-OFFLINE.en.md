@@ -2,6 +2,13 @@
 
 [Deutsch](CHANGELOG-OFFLINE.md) | **English**
 
+## 0.1.0-alpha.33 (2026-11-26) – Keyboard-aware payee and category selection (developer)
+- Shared compact, searchable suggestions for **local and server bookings and recurring-rule editors**.
+- As in the Dashboard mobile website, lists position themselves above or below each input using the visible viewport with the Android software keyboard. Roughly four rows remain visible at once; additional matches can scroll.
+- Suggestions prioritize frequently used names, then prefix matches when typing; existing selections can be replaced easily.
+- New payee names remain free text. Categories continue to require explicit selection; local category creation remains available. Local and server financial data are kept separate.
+- No changes to Dashboard, API write semantics, finance storage or backups. Debug-test developer build only; on-device verification remains pending.
+
 ## 0.1.0-alpha.32 (2026-11-26) – Unified UI and server recurring-rule preparation (developer)
 - **Unified interface:** Local and server bookings share cards, colors, status tags, spacing, collapsible details and action sizes.
 - **Server overview:** Matches the local section order for accounts, monthly summaries, booking search, filtering and sorting. Reports based on fetched API pages are marked as potentially incomplete.
