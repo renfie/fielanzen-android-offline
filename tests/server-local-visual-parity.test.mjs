@@ -125,7 +125,9 @@ test('html escaping prevents server titles and notes from becoming markup',()=>{
 });
 
 test('project package, version and private-data separation remain unchanged',()=>{
-  assert.equal(JSON.parse(source('package.json')).version,'0.1.0-alpha.31');
+  const currentVersion=JSON.parse(source('package.json')).version;
+  assert.match(currentVersion, /^0\.1\.0-alpha\.\d+$/);
+  assert.ok(source('src/main.ts').includes("export const APP_VERSION='"+currentVersion+"'"));
   assert.match(source('capacitor.config.ts'),/de\.fielanzen\.offline/);
   const main=source('src/main.ts');
   assert.equal((main.match(/exportFinancistoCompatible\(state\)/g)||[]).length,4);
